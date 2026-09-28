@@ -45,7 +45,7 @@ After release, install the exact asset URL:
 npm install https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/releases/download/v0.1.0/rmc-multiplayer-client-0.1.0.tgz
 ```
 
-Use this URL after the v0.1.0 Release workflow completes. Commit the consumer lockfile. The client needs only the public backend URL, never a Vercel token.
+The v0.1.0 asset is published and consumed by Multiplayer Draw. Commit the consumer lockfile. The client needs only the public backend URL, never a Vercel token.
 
 HTTP: `GET /api/health`; `POST /api/join/multiplayer-draw` returns a Colyseus seat reservation or 409 when full. Unknown games return 404; transient admission failures return 503. WebSocket messages are documented in the package. Drawing is limited to 100 strokes and 10,000 points per player, 2,048 points per stroke, and 64 points per batch. Erase strokes to reclaim space.
 

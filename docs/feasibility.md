@@ -22,3 +22,9 @@ The final drawing protocol passed between independent local Windows and GitHub U
 Final deployment dpl_4aTorGu62edPVTcv5iTSJbFhH8GR passed the full integration suite with 12 clients, rejection of client 13, ownership, late-join, departure cleanup, seat reuse, matchmaking restriction, and fresh automatic reconnect. The test body completed in 27.5 seconds. Browser/UI verification is recorded in the frontend repository.
 
 The replacement VERCEL_TOKEN passed direct project authorization, CLI account verification, production deployment and the two-client live probe in [run 36445269245](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/36445269245). All required deployment credentials are configured. The Release workflow will publish the first client tarball and deploy its tagged source.
+
+## Released deployment
+
+Backend/client v0.1.0 was published and deployed by [Release run 36445588819](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/36445588819). The tagged deployment is dpl_BjHj2FL88CD6aT5aji7VZkPvDn1u. Its automated live drawing suite passed, including 12 clients and rejection of a thirteenth. The public tarball was installed with a clean npm ci in the frontend.
+
+Rollback was exercised: production moved back to dpl_6phkByJyyWPGcmFf8X6XxcEbzATW, then the released dpl_BjHj2FL88CD6aT5aji7VZkPvDn1u was promoted again. Both CLI operations completed successfully. The frontend's public gameplay verification runs against the restored release.
