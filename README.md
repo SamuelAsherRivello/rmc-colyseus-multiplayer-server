@@ -2,7 +2,7 @@
 
 A reusable Colyseus backend and shared browser client for small multiplayer demos. Hosted on Vercel Hobby; clients can be hosted on GitHub Pages.
 
-**Status:** drawing backend deployed and integration-tested. First automated release is blocked by Vercel credential validation: the saved GitHub Actions `VERCEL_TOKEN` was rejected by the CLI and returned HTTP 403 on project access. No shared-client release is published yet.
+**Status:** drawing backend deployed and integration-tested. GitHub Actions deployment and the two-client live check passed in [run 36445269245](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/36445269245). Shared-client assets are published by the Release workflow.
 
 [Health endpoint](https://rmc-colyseus-multiplayer-server.vercel.app/api/health) · [Multiplayer Draw](https://github.com/SamuelAsherRivello/babylon-lite-multiplayer-draw) · [Hosting evidence](docs/feasibility.md)
 
@@ -45,7 +45,7 @@ After release, install the exact asset URL:
 npm install https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/releases/download/v0.1.0/rmc-multiplayer-client-0.1.0.tgz
 ```
 
-This URL is the intended first release asset, **not yet published**. Commit the consumer lockfile. The client needs only the public backend URL, never a Vercel token.
+Use this URL after the v0.1.0 Release workflow completes. Commit the consumer lockfile. The client needs only the public backend URL, never a Vercel token.
 
 HTTP: `GET /api/health`; `POST /api/join/multiplayer-draw` returns a Colyseus seat reservation or 409 when full. Unknown games return 404; transient admission failures return 503. WebSocket messages are documented in the package. Drawing is limited to 100 strokes and 10,000 points per player, 2,048 points per stroke, and 64 points per batch. Erase strokes to reclaim space.
 
@@ -55,7 +55,7 @@ The root `package.json` is the version source. Run the **Release** workflow with
 
 Deployment tests the tag, records the previous production deployment, deploys to Vercel, and runs live drawing checks. A failed post-deploy check attempts rollback and keeps the workflow failed. To restore a known tag manually, dispatch **Deploy backend release** with that tag.
 
-Required repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. All three secrets are saved; the token still needs replacement with a valid generated access token for this project/team. [Authorization check](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/36439963904) returned HTTP 403. The local CLI OAuth login cannot create a CI token for this app, so create a token in Vercel's account settings and save it directly to GitHub Secrets. Never commit credentials.
+Required repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. All three secrets are configured and verified by a successful Actions deployment. For replacement credentials, create an access token in Vercel account settings and save its generated value directly to GitHub Secrets. Release checks project access before publishing. Never commit credentials.
 
 ## Hosting limits
 
