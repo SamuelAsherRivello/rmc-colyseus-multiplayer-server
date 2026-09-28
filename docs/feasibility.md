@@ -13,7 +13,7 @@ Deployment dpl_CQGsysdik4aLRxSh67ETibeSkw9L at https://rmc-colyseus-multiplayer-
 
 This is bounded experimental evidence, not a guarantee of singleton routing or production reliability. Vercel ended sockets around five minutes. The SDK first attempted session restoration before the probe joined fresh rooms; the final shared client will explicitly disable automatic session restoration.
 
-Twelve-player capacity, real drawing, final client/browser behavior, and final release checks remain pending. CLI deployment works. GitHub release deployment still needs VERCEL_TOKEN.
+The later drawing and capacity results below supersede the initial probe. CLI deployment works; automated release access remains a separate gate.
 
 ## Drawing implementation verification
 
@@ -21,4 +21,4 @@ The final drawing protocol passed between independent local Windows and GitHub U
 
 Final deployment dpl_4aTorGu62edPVTcv5iTSJbFhH8GR passed the full integration suite with 12 clients, rejection of client 13, ownership, late-join, departure cleanup, seat reuse, matchmaking restriction, and fresh automatic reconnect. The test body completed in 27.5 seconds. Browser/UI verification is recorded in the frontend repository.
 
-Release automation remains unverified because VERCEL_TOKEN is not configured. No GitHub Release or public shared-client tarball has been published.
+All three deployment secrets are saved. The saved VERCEL_TOKEN was rejected by CLI format validation and failed direct project authorization with HTTP 403 in [run 36439963904](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/36439963904). Replace the token through GitHub Secrets; it must not enter chat or source. Release automation remains unverified. No GitHub Release or public shared-client tarball has been published.

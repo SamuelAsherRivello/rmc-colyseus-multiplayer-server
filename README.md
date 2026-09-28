@@ -2,7 +2,7 @@
 
 A reusable Colyseus backend and shared browser client for small multiplayer demos. Hosted on Vercel Hobby; clients can be hosted on GitHub Pages.
 
-**Status:** drawing backend deployed and integration-tested. First automated release is pending the GitHub Actions secret `VERCEL_TOKEN`. No shared-client release is published yet.
+**Status:** drawing backend deployed and integration-tested. First automated release is blocked by Vercel credential validation: the saved GitHub Actions `VERCEL_TOKEN` was rejected by the CLI and returned HTTP 403 on project access. No shared-client release is published yet.
 
 [Health endpoint](https://rmc-colyseus-multiplayer-server.vercel.app/api/health) · [Multiplayer Draw](https://github.com/SamuelAsherRivello/babylon-lite-multiplayer-draw) · [Hosting evidence](docs/feasibility.md)
 
@@ -55,7 +55,7 @@ The root `package.json` is the version source. Run the **Release** workflow with
 
 Deployment tests the tag, records the previous production deployment, deploys to Vercel, and runs live drawing checks. A failed post-deploy check attempts rollback and keeps the workflow failed. To restore a known tag manually, dispatch **Deploy backend release** with that tag.
 
-Required repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. The project identifiers are configured; the token is still pending. The local CLI OAuth login cannot create a CI token for this app, so create a token in Vercel's account settings and save it directly to GitHub Secrets. Never commit credentials.
+Required repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. All three secrets are saved; the token still needs replacement with a valid generated access token for this project/team. [Authorization check](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/36439963904) returned HTTP 403. The local CLI OAuth login cannot create a CI token for this app, so create a token in Vercel's account settings and save it directly to GitHub Secrets. Never commit credentials.
 
 ## Hosting limits
 
@@ -64,4 +64,3 @@ This is an experimental portfolio service, not a production scaling guarantee. O
 Vercel's function duration ends sessions around five minutes. Rejoining creates fresh identities and deletes previous artwork. Deployments can drop sessions, and old connections may briefly remain on an older deployment. There is no durable storage, account system, lobby UI, or paid dependency.
 
 The entry-point pattern follows [endel/colyseus-vercel](https://github.com/endel/colyseus-vercel). Runtime deployment needs explicit Express framework detection.
-
