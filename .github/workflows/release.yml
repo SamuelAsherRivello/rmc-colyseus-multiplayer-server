@@ -27,7 +27,9 @@ jobs:
       - name: Require deployment access before publishing a release
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: test -n "$VERCEL_TOKEN" || { echo "::error::Configure VERCEL_TOKEN before releasing"; exit 1; }
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: node scripts/check-credentials.mjs
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
@@ -59,4 +61,3 @@ jobs:
     with:
       ref: ${{ needs.release.outputs.tag }}
     secrets: inherit
-
