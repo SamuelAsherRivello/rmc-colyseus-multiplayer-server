@@ -1,0 +1,32 @@
+name: Cross-host feasibility
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Shared probe identifier for this run
+        required: true
+      seconds:
+        description: Duration (660 covers two 300 second timeouts)
+        default: '660'
+        required: true
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node scripts/cross-host.mjs
+        env:
+          SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
+          PROBE_HOST: github-runner
+          PROBE_RUN: ${{ inputs.run_id }}
+          PROBE_SECONDS: ${{ inputs.seconds }}
+

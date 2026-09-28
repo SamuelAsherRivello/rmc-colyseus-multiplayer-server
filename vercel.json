@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/server.ts": {
+      "maxDuration": 300
+    }
+  },
+  "regions": [
+    "iad1"
+  ],
+  "framework": "express"
+}
