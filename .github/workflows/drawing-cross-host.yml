@@ -1,0 +1,27 @@
+name: Cross-host drawing
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        required: true
+        description: Shared probe identifier
+permissions:
+  contents: read
+jobs:
+  drawing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/drawing-cross-host.mjs
+        env:
+          SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
+          PROBE_RUN: ${{ inputs.run_id }}
+          PROBE_HOST: github-runner
+          PROBE_SECONDS: '75'
+

@@ -1,0 +1,65 @@
+name: Deploy backend release
+on:
+  release:
+    types: [published]
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+    secrets:
+      VERCEL_TOKEN:
+        required: true
+      VERCEL_ORG_ID:
+        required: true
+      VERCEL_PROJECT_ID:
+        required: true
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Release tag to deploy or restore (v0.1.0)
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.release.tag_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Check release credentials
+        run: test -n "$VERCEL_TOKEN" && test -n "$VERCEL_ORG_ID" && test -n "$VERCEL_PROJECT_ID"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Record current production deployment
+        id: previous
+        run: node scripts/previous-deployment.mjs >> "$GITHUB_OUTPUT"
+      - name: Deploy tagged source
+        id: deploy
+        run: npx --yes vercel@60.1.3 deploy --prod --yes --scope ashers-projects-d3be6036
+      - name: Verify live drawing
+        id: smoke
+        run: npm test
+        env:
+          SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
+      - name: Restore previous deployment after failed live verification
+        if: failure() && steps.deploy.outcome == 'success' && steps.previous.outputs.id != ''
+        env:
+          PREVIOUS_ID: ${{ steps.previous.outputs.id }}
+        run: npx --yes vercel@60.1.3 rollback "$PREVIOUS_ID" --yes --scope ashers-projects-d3be6036
+
+

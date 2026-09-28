@@ -1,0 +1,62 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: New semantic version, for example 0.1.0
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: backend-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Require deployment access before publishing a release
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: test -n "$VERCEL_TOKEN" || { echo "::error::Configure VERCEL_TOKEN before releasing"; exit 1; }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Set release version
+        id: version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          node scripts/set-version.mjs
+          npm install --package-lock-only --ignore-scripts
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Package client
+        run: mkdir -p artifacts && npm pack ./packages/client --pack-destination artifacts
+      - name: Commit and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json packages/client/package.json
+          git diff --cached --quiet || git commit -m "Release v$VERSION"
+          git tag "v$VERSION"
+          git push origin HEAD:main "v$VERSION"
+          gh release create "v$VERSION" artifacts/*.tgz --title "v$VERSION" --generate-notes
+  deploy:
+    needs: release
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ needs.release.outputs.tag }}
+    secrets: inherit
+

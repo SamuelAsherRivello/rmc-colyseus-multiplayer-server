@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",
-    "probe": "node scripts/probe.mjs"
+    "probe": "node scripts/probe.mjs",
+    "test": "node --test test/integration.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.17.44",

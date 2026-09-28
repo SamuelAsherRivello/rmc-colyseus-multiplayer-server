@@ -1,0 +1,16 @@
+# Hosting feasibility — 2026-09-28
+
+Deployment dpl_CQGsysdik4aLRxSh67ETibeSkw9L at https://rmc-colyseus-multiplayer-server.vercel.app.
+
+- TypeScript check: pass.
+- Two local clients: pass.
+- Two clients against fresh live deployment: pass.
+- Independent hosts: this Windows computer and GitHub Ubuntu runner in Azure eastus.
+- Duration: 660 seconds each; three joins each (initial plus two timeout recoveries).
+- Shared room sequence on both hosts: uHebGVriS, LPG3Vvb0-, bdjo2weQ1.
+- Messages received: local 601; GitHub runner 597.
+- CI evidence: https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/36427675103
+
+This is bounded experimental evidence, not a guarantee of singleton routing or production reliability. Vercel ended sockets around five minutes. The SDK first attempted session restoration before the probe joined fresh rooms; the final shared client will explicitly disable automatic session restoration.
+
+Twelve-player capacity, real drawing, final client/browser behavior, and final release checks remain pending. CLI deployment works. GitHub release deployment still needs VERCEL_TOKEN.
