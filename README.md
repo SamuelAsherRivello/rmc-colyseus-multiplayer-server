@@ -122,3 +122,9 @@ The entry-point pattern follows [endel/colyseus-vercel](https://github.com/endel
 - [LinkedIn](https://www.linkedin.com/in/SamuelAsherRivello/)
 - [GitHub](https://github.com/SamuelAsherRivello/)
 - [Portfolio](https://www.samuelasherrivello.com/)
+
+### Sumo Battle
+
+[Sumo Battle](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) ([source](https://github.com/SamuelAsherRivello/babylon-lite-sumo-battle)) adds a server-authoritative 1–12 player ring-out arena. The `sumo-battle` game uses a separate room with fixed-step movement, collision impulses, bounded inputs, dash cooldowns, ring-out credit, safe respawns, first-to-three victory and automatic replay. Solo sessions have a labeled AI opponent. The shared 0.2.0 client adds generic `gameState` while preserving 0.1.0 drawing behavior. See the [client contract](multiplayer-server/packages/client/README.md#sumo-battle-shared-client-020).
+
+`npm test` now runs drawing regressions, deterministic sumo rule tests and sumo integration (sync, authority, late join, bot, 12/13 capacity, departure, reconnect and game isolation). Live tests require otherwise empty drawing and sumo sessions. Deployment runs these checks against the public backend and rolls back on failure. No persistent scores; hosting interruptions reset in-memory matches.

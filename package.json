@@ -11,7 +11,7 @@
     "dev": "tsx server.ts",
     "typecheck": "tsc --noEmit",
     "probe": "node scripts/probe.mjs",
-    "test": "node --test multiplayer-server/test/integration.mjs"
+    "test": "node --import tsx --test --test-concurrency=1 multiplayer-server/test/*.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.17.44",
