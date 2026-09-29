@@ -145,3 +145,5 @@ Verification adds deterministic dungeon rules and live-capable synchronization, 
 [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) · [Source](https://github.com/SamuelAsherRivello/babylon-lite-gauntlet-clone-2d)
 
 The isolated `gauntlet-2d` room supports 1–4 players with server-authoritative tile movement, four switchable classes, four enemy types, generators, keys, food, treasure, revival, victory/defeat and automatic replay. Player numbers and four unique colors persist through class switches. Snapshot state uses the existing generic shared client contract. Tests cover rules, two-client synchronization, invalid input, capacity, isolation, hot drop and fresh reconnect. Session resets and hosting limits above still apply. The consumer pins the exact release artifact after live verification.
+
+Deployment explicitly assigns the canonical public alias after a tagged checkout: detached tags otherwise only updated the team-scoped domain in observed v0.5.0 deployment. A health/version gate now precedes live tests. Recover with Deploy backend release using the existing tag; do not create another version merely to retry routing.
