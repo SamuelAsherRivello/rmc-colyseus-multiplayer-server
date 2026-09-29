@@ -34,3 +34,9 @@ Generic game state clears on connect, connection loss, and disconnect. Existing 
 ## Garden Chat
 Use game key `garden-chat`. Send `move` with `{x,z}` normalized axes (refresh within 300ms), or `chat` with a plain string up to 280 characters. State exposes `players` with x/z and `chats` with the latest 100 messages. Events: garden, chat, snapshot, presence, departed. Chat rate: one per 750ms. History is in-memory and resets when the room closes. Local pause must send zero movement.
 
+## Gauntlet 3D (0.5.0)
+
+Use game key `gauntlet-3d`. Send `input` at 20Hz with `{x,z,attack,magic}`: finite axes in [-1,1], boolean actions. Inputs expire after 300ms. `class` accepts `warrior`, `valkyrie`, `wizard`, `elf`; switching preserves health fraction, cooldowns, position and identity. Auto-aim selects the closest visible enemy or altar; without a target shots follow facing. `restart` is accepted only from the lowest active seat after victory/defeat. No client position, health or score authority. Rate limit 60 messages/second.
+
+`state.gameState` contains level rows (# wall, . floor), players, enemies, generators, pickups, shots, blasts, exit, key, phase, time, match and event. x/z are tile coordinates; rows are z. Classes have distinct speed, health, damage and cooldown. Local pause sends zero input; the shared game continues. Full rooms need explicit retry. Reconnect creates a fresh identity. Key belongs to the team. Victory requires four destroyed altars and reaching the exit with the key; all fallen means defeat. Live tests require an otherwise empty Gauntlet room.
+

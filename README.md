@@ -133,3 +133,8 @@ The entry-point pattern follows [endel/colyseus-vercel](https://github.com/endel
 ## Garden Chat
 [Garden Chat live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) adds a 12-player social garden with authoritative movement, bumping and bounded session chat history. See the game registry and shared client API. `npm test` also verifies garden synchronization, admission, chat, bounds and isolation locally or against SERVER_URL.
 
+## Gauntlet 3D
+
+[Gauntlet Clone 3D](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) ([source](https://github.com/SamuelAsherRivello/babylon-lite-gauntlet-clone-3d)) uses `gauntlet-3d`, an isolated four-seat authoritative cooperative dungeon. It adds four switchable classes, four enemy types, destructible generators, pickups, victory/defeat and leader-controlled terminal replay. Existing games retain their contracts. All players may choose the same class; seat colors remain unique. No persistent progress; hosting interruptions reset the level. The dungeon is designed for short runs within the existing hosting duration.
+
+Verification adds deterministic dungeon rules and live-capable synchronization, capacity, late-join, class-switch, departure, retry, reconnect and isolation checks to `npm test`.

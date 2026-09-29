@@ -6,5 +6,7 @@
 
 Before changing a shared protocol, review each game here, update and re-release affected clients, and test their public URLs. Short downtime and session loss are acceptable; silently leaving old demos broken is not.
 
-| Garden Chat | garden-chat | 12 | @rmc/multiplayer-client 0.3.0 | [Live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) |
+| Garden Chat | garden-chat | 12 | @rmc/multiplayer-client 0.5.0 | [Live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) |
+
+| Gauntlet 3D | gauntlet-3d | 4 | @rmc/multiplayer-client 0.5.0 | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) · [Source](https://github.com/SamuelAsherRivello/babylon-lite-gauntlet-clone-3d) |
 
