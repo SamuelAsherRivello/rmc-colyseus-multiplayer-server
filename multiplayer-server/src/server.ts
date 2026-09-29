@@ -6,6 +6,7 @@ import { Room, Server, ServerError, matchMaker, type Client } from "@colyseus/co
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { DrawingRoom } from "./drawing-room.js";
 import { SumoRoom } from "./sumo-room.js";
+import { Gauntlet2DRoom } from "./gauntlet2d-room.js";
 import { GardenRoom } from "./garden-room.js";
 import { GauntletRoom } from "./gauntlet-room.js";
 
@@ -15,7 +16,11 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
+<<<<<<< HEAD
 const games = new Map<string, typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof GauntletRoom>([["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-3d", GauntletRoom]]);
+=======
+const games = new Map<string, typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom>([["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom]]);
+>>>>>>> origin/main
 let joining: Promise<unknown> = Promise.resolve();
 class FullRoomError extends Error {}
 async function reserve(game: string) {
@@ -70,6 +75,7 @@ gameServer.define("feasibility", ProbeRoom);
 const server = await gameServer.serverless();
 if (!process.env.VERCEL) server.listen(Number(process.env.PORT) || 2567, "0.0.0.0");
 export default server;
+
 
 
 

@@ -133,8 +133,17 @@ The entry-point pattern follows [endel/colyseus-vercel](https://github.com/endel
 ## Garden Chat
 [Garden Chat live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) adds a 12-player social garden with authoritative movement, bumping and bounded session chat history. See the game registry and shared client API. `npm test` also verifies garden synchronization, admission, chat, bounds and isolation locally or against SERVER_URL.
 
+<<<<<<< HEAD
 ## Gauntlet 3D
 
 [Gauntlet Clone 3D](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) ([source](https://github.com/SamuelAsherRivello/babylon-lite-gauntlet-clone-3d)) uses `gauntlet-3d`, an isolated four-seat authoritative cooperative dungeon. It adds four switchable classes, four enemy types, destructible generators, pickups, victory/defeat and leader-controlled terminal replay. Existing games retain their contracts. All players may choose the same class; seat colors remain unique. No persistent progress; hosting interruptions reset the level. The dungeon is designed for short runs within the existing hosting duration.
 
 Verification adds deterministic dungeon rules and live-capable synchronization, capacity, late-join, class-switch, departure, retry, reconnect and isolation checks to `npm test`.
+=======
+
+## Gauntlet 2D — Embervault
+
+[Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) · [Source](https://github.com/SamuelAsherRivello/babylon-lite-gauntlet-clone-2d)
+
+The isolated `gauntlet-2d` room supports 1–4 players with server-authoritative tile movement, four switchable classes, four enemy types, generators, keys, food, treasure, revival, victory/defeat and automatic replay. Player numbers and four unique colors persist through class switches. Snapshot state uses the existing generic shared client contract. Tests cover rules, two-client synchronization, invalid input, capacity, isolation, hot drop and fresh reconnect. Session resets and hosting limits above still apply. The consumer pins the exact release artifact after live verification.
+>>>>>>> origin/main
