@@ -133,3 +133,9 @@ The entry-point pattern follows [endel/colyseus-vercel](https://github.com/endel
 ## Garden Chat
 [Garden Chat live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) adds a 12-player social garden with authoritative movement, bumping and bounded session chat history. See the game registry and shared client API. `npm test` also verifies garden synchronization, admission, chat, bounds and isolation locally or against SERVER_URL.
 
+
+## Gauntlet 2D — Embervault
+
+[Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) · [Source](https://github.com/SamuelAsherRivello/babylon-lite-gauntlet-clone-2d)
+
+The isolated `gauntlet-2d` room supports 1–4 players with server-authoritative tile movement, four switchable classes, four enemy types, generators, keys, food, treasure, revival, victory/defeat and automatic replay. Player numbers and four unique colors persist through class switches. Snapshot state uses the existing generic shared client contract. Tests cover rules, two-client synchronization, invalid input, capacity, isolation, hot drop and fresh reconnect. Session resets and hosting limits above still apply. The consumer pins the exact release artifact after live verification.

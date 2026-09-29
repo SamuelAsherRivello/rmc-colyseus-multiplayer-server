@@ -34,3 +34,9 @@ Generic game state clears on connect, connection loss, and disconnect. Existing 
 ## Garden Chat
 Use game key `garden-chat`. Send `move` with `{x,z}` normalized axes (refresh within 300ms), or `chat` with a plain string up to 280 characters. State exposes `players` with x/z and `chats` with the latest 100 messages. Events: garden, chat, snapshot, presence, departed. Chat rate: one per 750ms. History is in-memory and resets when the room closes. Local pause must send zero movement.
 
+
+## Gauntlet 2D
+
+Use game key `gauntlet-2d` with the released shared client. Send `input` at 20 Hz: `{x,y,ax,ay,attack}`; four axes must be finite within [-1,1], attack boolean. Zero aim uses nearest visible target. Input expires after 300 ms; send zeros on blur/pause/cancel. Send `select` with `warrior`, `valkyrie`, `wizard` or `elf`. Switching never restores health or cooldown. No client positions, damage, keys or reset commands are accepted.
+
+`gameState` includes round, time, map, players (id, number, name, color, hero, x, y, hp, cooldown, shield, revive, facing, kills), enemies, generators, shots, items, keys, treasure, status, restartIn, event and exit. The entire snapshot is current for late join. Capacity is four; a fifth receives full status. All dead means defeat; two keys and all four destroyed generators unlock the exit. Victory or defeat automatically replays after ten seconds. Local pause does not stop the shared world. Stand near a downed ally for 2.5 seconds to revive. Reconnect is a fresh player; no persistent progress. No existing drawing, sumo or garden protocol changes.

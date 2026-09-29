@@ -9,3 +9,5 @@ Before changing a shared protocol, review each game here, update and re-release 
 
 | Garden Chat | garden-chat | 12 | @rmc/multiplayer-client 0.3.0 | [Live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) |
 
+
+| Gauntlet 2D — Embervault | gauntlet-2d | 4 | @rmc/multiplayer-client 0.3+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) · [Source](https://github.com/SamuelAsherRivello/babylon-lite-gauntlet-clone-2d) |
