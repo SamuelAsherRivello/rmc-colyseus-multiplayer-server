@@ -35,7 +35,8 @@ npm run dev
 ```
 
 Server port defaults to 2567; override `PORT`. Tests start their own server on 2678.
-Set `SERVER_URL` before `npm test` to run the same ownership, late-join, cleanup, fresh-reconnect, seat-reuse, 12/13-capacity checks against a live server. Live integration checks need an otherwise empty drawing session.
+Set `SERVER_URL` before 
+pm test` to run the same ownership, late-join, cleanup, fresh-reconnect, seat-reuse, 12/13-capacity checks against a live server. Live integration checks need an otherwise empty drawing session.
 
 ### 🛠 Release Version
 
@@ -91,7 +92,8 @@ New games should review this catalog and [the game registry](multiplayer-server/
 
 ### Shared Client API
 
-See [package documentation](multiplayer-server/packages/client/README.md). Build locally with `npm pack ./multiplayer-server/packages/client --pack-destination artifacts` after creating the artifacts directory.
+See [package documentation](multiplayer-server/packages/client/README.md). Build locally with 
+pm pack ./multiplayer-server/packages/client --pack-destination artifacts` after creating the artifacts directory.
 
 After release, install the exact asset URL:
 
@@ -128,3 +130,6 @@ The entry-point pattern follows [endel/colyseus-vercel](https://github.com/endel
 [Sumo Battle](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) ([source](https://github.com/SamuelAsherRivello/babylon-lite-sumo-battle)) adds a server-authoritative 1–12 player ring-out arena. The `sumo-battle` game uses a separate room with fixed-step movement, collision impulses, bounded inputs, dash cooldowns, ring-out credit, safe respawns, first-to-three victory and automatic replay. Solo sessions have a labeled AI opponent. The shared 0.2.0 client adds generic `gameState` while preserving 0.1.0 drawing behavior. See the [client contract](multiplayer-server/packages/client/README.md#sumo-battle-shared-client-020).
 
 `npm test` now runs drawing regressions, deterministic sumo rule tests and sumo integration (sync, authority, late join, bot, 12/13 capacity, departure, reconnect and game isolation). Live tests require otherwise empty drawing and sumo sessions. Deployment runs these checks against the public backend and rolls back on failure. No persistent scores; hosting interruptions reset in-memory matches.
+## Garden Chat
+[Garden Chat live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) adds a 12-player social garden with authoritative movement, bumping and bounded session chat history. See the game registry and shared client API. `npm test` also verifies garden synchronization, admission, chat, bounds and isolation locally or against SERVER_URL.
+
