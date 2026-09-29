@@ -21,7 +21,7 @@ test("drawing ownership, late join, cleanup, stable seats, 12 capacity, and full
   let server;
   try {
     if (!process.env.SERVER_URL) {
-      server = spawn(process.execPath, ["--import", "tsx", "src/server.ts"], { env: { ...process.env, PORT: "2678" }, stdio: "ignore" });
+      server = spawn(process.execPath, ["--import", "tsx", "server.ts"], { env: { ...process.env, PORT: "2678" }, stdio: "ignore" });
       let ready = false;
       for (let i = 0; i < 100; i++) {
         try { ready = (await fetch(endpoint + "/api/health")).ok; } catch {}

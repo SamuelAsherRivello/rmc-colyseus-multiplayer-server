@@ -9,6 +9,6 @@
     "resolveJsonModule": true
   },
   "include": [
-    "src/**/*.ts"
+    "server.ts", "multiplayer-server/src/**/*.ts"
   ]
 }

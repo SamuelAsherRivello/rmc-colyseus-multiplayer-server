@@ -1,27 +1,29 @@
+![Samuel Asher Rivello](multiplayer-server/documentation/samuel-asher-rivello-banner.png)
+
 # RMC Colyseus Multiplayer Server
 
-A reusable Colyseus backend and shared browser client for small multiplayer demos. Hosted on Vercel Hobby; clients can be hosted on GitHub Pages.
+A reusable Colyseus backend and shared browser client for small multiplayer demos. Players join anonymously, receive a name and color, and share a room with automatic departure cleanup. Hosted on Vercel Hobby; consuming browser projects can run on GitHub Pages.
 
-**Status:** drawing backend deployed and integration-tested. GitHub Actions deployment and the two-client live check passed in [run 36445269245](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/36445269245). Shared-client assets are published by the Release workflow.
+## Live Demos
 
-[Health endpoint](https://rmc-colyseus-multiplayer-server.vercel.app/api/health) · [Multiplayer Draw](https://github.com/SamuelAsherRivello/babylon-lite-multiplayer-draw) · [Hosting evidence](docs/feasibility.md)
+This repository provides the shared multiplayer service and has no standalone demo. Play the projects that use it:
 
-## Custom Shared Features
+- **[Multiplayer Draw](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/)** — draw together from separate computers or browser tabs. [Source repository](https://github.com/SamuelAsherRivello/babylon-lite-multiplayer-draw).
 
-| Feature | Available behavior |
-|---|---|
-| Hot join / hot drop | Automatic anonymous admission; remove departed presence and game-owned artwork after disconnect detection. |
-| Player identity | Lowest free ordered seat; fresh session ID, server-generated deterministic name/color; existing seats remain unchanged. Active colors are distinct. |
-| Shared client | `MultiplayerClient` exposes status, session ID, room ID, players, occupancy, retry, game messages, and subscription/teardown. |
-| Admission and capacity | One room per game within the running instance; capacity 12 for drawing; full status with explicit retry and no normal overflow room. Direct drawing matchmaking is blocked. |
-| Fresh reconnect | Exponential backoff, capped at 15 seconds; SDK identity restoration disabled. No persistent-user identity. |
-| Drawing relay | Normalized strokes/cursors, active-stroke snapshots for late joiners, whole-stroke ownership enforcement, departure cleanup. |
+See the [supported game registry](multiplayer-server/documentation/games.md) for room keys and client versions.
 
-**Future feature: `persistent-user-rejoins`.** Not implemented. Every reconnect and refresh creates a fresh user, and previous artwork is removed.
+## Table of Contents
 
-New games should review this catalog and [the game registry](docs/games.md). Add broadly useful lifecycle/UI support to the shared client, document it here, and pin its release in each consumer. Use a smaller capacity when gameplay requires it.
+1. [Live Demos](#live-demos)
+2. [Getting Started](#getting-started)
+3. [Project Details](#project-details)
+4. [Credits](#credits)
 
-## Run and verify
+## Getting Started
+
+### 🛠 Build, Verify, and Run Project
+
+Run the following commands from the repository root. TypeScript is checked without emitting a separate build; tsx runs the source locally.
 
 Use Node 24 and npm:
 
@@ -35,9 +37,61 @@ npm run dev
 Server port defaults to 2567; override `PORT`. Tests start their own server on 2678.
 Set `SERVER_URL` before `npm test` to run the same ownership, late-join, cleanup, fresh-reconnect, seat-reuse, 12/13-capacity checks against a live server. Live integration checks need an otherwise empty drawing session.
 
-## Shared client API
+### 🛠 Release Version
 
-See [package documentation](packages/client/README.md). Build locally with `npm pack ./packages/client --pack-destination artifacts` after creating the artifacts directory.
+The root `package.json` is the version source. Run the **Release** workflow with a new semantic version. It tests, sets root/client versions, publishes a tagged GitHub Release with the client tarball, and explicitly calls **Deploy backend release**. This avoids relying on a bot-created release to trigger another workflow. A human-published GitHub Release also triggers deployment.
+
+Deployment tests the tag, records the previous production deployment, deploys to Vercel, and runs live drawing checks. A failed post-deploy check attempts rollback and keeps the workflow failed. To restore a known tag manually, dispatch **Deploy backend release** with that tag.
+
+Required repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. All three secrets are configured and verified by a successful Actions deployment. For replacement credentials, create an access token in Vercel account settings and save its generated value directly to GitHub Secrets. Release checks project access before publishing. Never commit credentials.
+
+## Project Details
+
+### 📝 Structure
+
+```text
+multiplayer-server/
+├── src/                 # Colyseus server and game rooms
+├── test/                # Integration checks
+├── packages/client/     # Reusable browser client and API README
+└── documentation/       # Game registry and hosting evidence
+scripts/                 # Release tooling and hosting probes
+.github/workflows/       # Verification, release, and deployment
+server.ts                # Thin Vercel entry point
+package.json             # Root npm commands and release version
+```
+
+Run commands from the repository root. Root TypeScript and Vercel configuration use `server.ts` to load the project implementation.
+
+### 📦 AI
+
+[AGENTS.md](AGENTS.md) documents the layout, verification commands, and consumer-link conventions. The README and layout follow the supplied Multiplayer Draw reference, adapted for a shared backend.
+
+### 📦 Packages
+
+- [Colyseus](https://colyseus.io/) — rooms, admission, and realtime messaging.
+- [Express](https://expressjs.com/) — HTTP health and join endpoints.
+- [Shared multiplayer client](multiplayer-server/packages/client/README.md) — status, identity, occupancy, game messages, and reconnection.
+- [TypeScript](https://www.typescriptlang.org/) and tsx — type checking and local execution.
+
+### Custom Shared Features
+
+| Feature | Available behavior |
+|---|---|
+| Hot join / hot drop | Automatic anonymous admission; remove departed presence and game-owned artwork after disconnect detection. |
+| Player identity | Lowest free ordered seat; fresh session ID, server-generated deterministic name/color; existing seats remain unchanged. Active colors are distinct. |
+| Shared client | `MultiplayerClient` exposes status, session ID, room ID, players, occupancy, retry, game messages, and subscription/teardown. |
+| Admission and capacity | One room per game within the running instance; capacity 12 for drawing; full status with explicit retry and no normal overflow room. Direct drawing matchmaking is blocked. |
+| Fresh reconnect | Exponential backoff, capped at 15 seconds; SDK identity restoration disabled. No persistent-user identity. |
+| Drawing relay | Normalized strokes/cursors, active-stroke snapshots for late joiners, whole-stroke ownership enforcement, departure cleanup. |
+
+**Future feature: `persistent-user-rejoins`.** Not implemented. Every reconnect and refresh creates a fresh user, and previous artwork is removed.
+
+New games should review this catalog and [the game registry](multiplayer-server/documentation/games.md). Add broadly useful lifecycle/UI support to the shared client, document it here, and pin its release in each consumer. Use a smaller capacity when gameplay requires it.
+
+### Shared Client API
+
+See [package documentation](multiplayer-server/packages/client/README.md). Build locally with `npm pack ./multiplayer-server/packages/client --pack-destination artifacts` after creating the artifacts directory.
 
 After release, install the exact asset URL:
 
@@ -49,18 +103,22 @@ The v0.1.0 asset is published and consumed by Multiplayer Draw. Commit the consu
 
 HTTP: `GET /api/health`; `POST /api/join/multiplayer-draw` returns a Colyseus seat reservation or 409 when full. Unknown games return 404; transient admission failures return 503. WebSocket messages are documented in the package. Drawing is limited to 100 strokes and 10,000 points per player, 2,048 points per stroke, and 64 points per batch. Erase strokes to reclaim space.
 
-## Releases and rollback
+### Hosting Limits
 
-The root `package.json` is the version source. Run the **Release** workflow with a new semantic version. It tests, sets root/client versions, publishes a tagged GitHub Release with the client tarball, and explicitly calls **Deploy backend release**. This avoids relying on a bot-created release to trigger another workflow. A human-published GitHub Release also triggers deployment.
-
-Deployment tests the tag, records the previous production deployment, deploys to Vercel, and runs live drawing checks. A failed post-deploy check attempts rollback and keeps the workflow failed. To restore a known tag manually, dispatch **Deploy backend release** with that tag.
-
-Required repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. All three secrets are configured and verified by a successful Actions deployment. For replacement credentials, create an access token in Vercel account settings and save its generated value directly to GitHub Secrets. Release checks project access before publishing. Never commit credentials.
-
-## Hosting limits
-
-This is an experimental portfolio service, not a production scaling guarantee. One Vercel deployment does not guarantee one running process; independent instances cannot share these in-memory rooms. Live tests passed with 12 connections, and two independent hosts passed an 11-minute relay test across two timeout/rejoin cycles. See recorded evidence.
+This is an experimental portfolio service, not a production scaling guarantee. One Vercel deployment does not guarantee one running process; independent instances cannot share these in-memory rooms. Live tests passed with 12 connections, and two independent hosts passed an 11-minute relay test across two timeout/rejoin cycles. See the [recorded hosting evidence](multiplayer-server/documentation/feasibility.md).
 
 Vercel's function duration ends sessions around five minutes. Rejoining creates fresh identities and deletes previous artwork. Deployments can drop sessions, and old connections may briefly remain on an older deployment. There is no durable storage, account system, lobby UI, or paid dependency.
 
 The entry-point pattern follows [endel/colyseus-vercel](https://github.com/endel/colyseus-vercel). Runtime deployment needs explicit Express framework detection.
+
+## Credits
+
+### 💡 Contributors
+
+- Samuel Asher Rivello — Rivello Multimedia Consulting.
+
+### 💡 Contact
+
+- [LinkedIn](https://www.linkedin.com/in/SamuelAsherRivello/)
+- [GitHub](https://github.com/SamuelAsherRivello/)
+- [Portfolio](https://www.samuelasherrivello.com/)

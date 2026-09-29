@@ -1,4 +1,4 @@
-import metadata from "../package.json" with { type: "json" };
+import metadata from "../../package.json" with { type: "json" };
 import express from "express";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";

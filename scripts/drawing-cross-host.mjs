@@ -1,4 +1,4 @@
-import { MultiplayerClient } from "../packages/client/index.js";
+import { MultiplayerClient } from "../multiplayer-server/packages/client/index.js";
 import { setTimeout as delay } from "node:timers/promises";
 const run = process.env.PROBE_RUN, host = process.env.PROBE_HOST;
 if (!run || !host) throw new Error("PROBE_RUN and PROBE_HOST required");
