@@ -12,5 +12,6 @@ Acceptance: deterministic movement, collision/attribution, self-fall, first-to-t
 - [x] Compatible shared client state support
 - [x] Unit and multiplayer integration coverage
 - [x] Documentation and deployment verification wiring
-- [ ] Release and live verification
+- [x] Release and live verification (0.2.0 package; recovery deployment 36608212781 passed all live tests; 0.2.1 packages the entry-point fix)
+
 
