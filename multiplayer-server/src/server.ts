@@ -6,6 +6,7 @@ import { Room, Server, ServerError, matchMaker, type Client } from "@colyseus/co
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { DrawingRoom } from "./drawing-room.js";
 import { SumoRoom } from "./sumo-room.js";
+import { Gauntlet2DRoom } from "./gauntlet2d-room.js";
 
 const instance = randomUUID();
 const defaultMatchmaking = matchMaker.controller.invokeMethod.bind(matchMaker.controller);
@@ -13,7 +14,7 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
-const games = new Map<string, typeof DrawingRoom | typeof SumoRoom>([["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom]]);
+const games = new Map<string, typeof DrawingRoom | typeof SumoRoom | typeof Gauntlet2DRoom>([["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["gauntlet-2d", Gauntlet2DRoom]]);
 let joining: Promise<unknown> = Promise.resolve();
 class FullRoomError extends Error {}
 async function reserve(game: string) {
