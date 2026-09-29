@@ -2,14 +2,10 @@
 
 | Game | Room key | Capacity | Client package | Frontend |
 |---|---|---|---|---|
-| Multiplayer Draw | multiplayer-draw | 12 | @rmc/multiplayer-client 0.1.0 (compatible with 0.2.x) | [Live demo](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) · [Source](https://github.com/SamuelAsherRivello/babylon-lite-multiplayer-draw) |
-| Sumo Battle | sumo-battle | 12 humans; solo bot | @rmc/multiplayer-client 0.2.x | [Live demo](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) · [Source](https://github.com/SamuelAsherRivello/babylon-lite-sumo-battle) |
+| Multiplayer Draw | multiplayer-draw | 12 | 0.1.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) |
+| Sumo Battle | sumo-battle | 12 | 0.2.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) |
+| Garden Chat | garden-chat | 12 | 0.3.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) |
+| Gauntlet 2D | gauntlet-2d | 4 | 0.4.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) |
+| Gauntlet 3D | gauntlet-3d | 4 | 0.5.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) |
 
-Before changing a shared protocol, review each game here, update and re-release affected clients, and test their public URLs. Short downtime and session loss are acceptable; silently leaving old demos broken is not.
-
-| Garden Chat | garden-chat | 12 | @rmc/multiplayer-client 0.5.0 | [Live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) |
-
-| Gauntlet 3D | gauntlet-3d | 4 | @rmc/multiplayer-client 0.5.0 | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) · [Source](https://github.com/SamuelAsherRivello/babylon-lite-gauntlet-clone-3d) |
-
-
-| Gauntlet 2D — Embervault | gauntlet-2d | 4 | @rmc/multiplayer-client 0.3+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) · [Source](https://github.com/SamuelAsherRivello/babylon-lite-gauntlet-clone-2d) |
+All packages are @rmc/multiplayer-client. Before changing a shared protocol, review each game, update affected consumers and test public URLs. Short downtime and session loss are acceptable; leaving existing demos broken is not.

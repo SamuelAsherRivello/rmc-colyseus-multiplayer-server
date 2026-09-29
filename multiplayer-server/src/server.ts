@@ -16,11 +16,7 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
-<<<<<<< HEAD
-const games = new Map<string, typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof GauntletRoom>([["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-3d", GauntletRoom]]);
-=======
-const games = new Map<string, typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom>([["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom]]);
->>>>>>> origin/main
+const games = new Map<string, typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom>([["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom], ["gauntlet-3d", GauntletRoom]]);
 let joining: Promise<unknown> = Promise.resolve();
 class FullRoomError extends Error {}
 async function reserve(game: string) {
