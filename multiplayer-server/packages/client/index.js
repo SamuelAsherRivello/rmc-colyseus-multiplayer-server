@@ -6,7 +6,7 @@ export class MultiplayerClient {
     this.endpoint = endpoint.replace(/\/$/, "");
     this.game = game;
     this.listeners = new Set();
-    this.state = { status: "idle", players: [], strokes: new Map(), gameState: null, capacity: 12, sessionId: null, error: "" };
+    this.state = { status: "idle", players: [], strokes: new Map(), gameState: null, chats: [], capacity: 12, sessionId: null, error: "" };
     this.stopped = true;
     this.generation = 0;
     this.retryDelay = 1000;
@@ -19,7 +19,7 @@ export class MultiplayerClient {
     clearTimeout(this.timer);
     const old = this.room; this.room = undefined;
     if (old) void old.leave();
-    this.state = { ...this.state, status: "connecting", sessionId: null, players: [], strokes: new Map(), gameState: null, error: "" };
+    this.state = { ...this.state, status: "connecting", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], error: "" };
     this.emit("status");
     let room;
     try {
@@ -40,6 +40,8 @@ export class MultiplayerClient {
         this.state.players = data.players;
         this.state.strokes = new Map((data.strokes || []).map(s => [s.id, s]));
         this.state.capacity = data.capacity; this.state.gameState = data.gameState ?? null;
+        this.state.chats = data.chats || [];
+        this.state.capacity = data.capacity;
         this.state.status = "connected";
         this.state.error = "";
         this.retryDelay = 1000;
@@ -47,6 +49,8 @@ export class MultiplayerClient {
       });
       room.onMessage("gameState", data => { this.state.gameState = data; this.emit("gameState"); });
       room.onMessage("presence", data => { Object.assign(this.state, data); this.emit("presence"); });
+      room.onMessage("garden", data => { this.state.players = data.players; this.emit("garden"); });
+      room.onMessage("chat", data => { this.state.chats = [...(this.state.chats || []), data].slice(-100); this.emit("chat"); });
       room.onMessage("cursor", data => {
         const player = this.state.players.find(p => p.id === data.id);
         if (player) player.cursor = data.cursor;
@@ -93,7 +97,7 @@ export class MultiplayerClient {
   }
   schedule(message) {
     if (this.stopped) return;
-    this.state = { ...this.state, status: "reconnecting", sessionId: null, players: [], strokes: new Map(), gameState: null, error: message };
+    this.state = { ...this.state, status: "reconnecting", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], error: message };
     this.emit("status");
     clearTimeout(this.timer);
     this.timer = setTimeout(() => void this.connect(), this.retryDelay);
@@ -105,7 +109,7 @@ export class MultiplayerClient {
     clearTimeout(this.timer);
     const room = this.room; this.room = undefined;
     if (room) void room.leave();
-    this.state = { ...this.state, status: "offline", sessionId: null, players: [], strokes: new Map(), gameState: null, roomId: null };
+    this.state = { ...this.state, status: "offline", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], roomId: null };
     this.emit("status");
   }
 }
