@@ -1,5 +1,19 @@
 # RMC Multiplayer Client
 
+## Dust Circuit Rally (0.7.0)
+
+Use `new MultiplayerClient(endpoint, 'dust-circuit-rally')`. Read `state.gameState`: `phase`, `round`, `time`, `raceTime`, `remaining`, `countdown`, `people`, `trucks`, `pickups`, `ranking` and `event`.
+
+Send `ready` with a boolean during waiting. `start` is accepted only from the lowest active human seat when all present humans are ready. The grid freezes at countdown. Late arrivals wait until the next race. Results last eight seconds, then everyone readies again.
+
+Send `input` at 20Hz with `{seq, steer, throttle, brake, boost, recover}`. Sequence is a nonnegative increasing safe integer, steering is finite [-1,1], throttle finite [0,1], remaining controls boolean. Inputs expire after 300ms. Truck `ack` acknowledges the accepted sequence. No client positions, lap counts, pickup claims or finish results are authoritative. Send neutral controls on blur, pause menu or pointer cancellation. Shared racing continues during a local online pause.
+
+Trucks expose identity/number/color, AI flag, position x/y/z, angle, planar velocity, vertical velocity, grounded state, nitro seconds, traction seconds, lap count, next gate, checkpoint count, finish time or null, and recovery penalty. Three laps win; a 15-second finishing window follows the first finisher, with a 120-second hard cap. Recovery costs 1.25 seconds and cannot advance checkpoints. Nitro refills add 1.5 seconds up to five; traction lasts five seconds and refreshes; pickup respawn is eight seconds.
+
+Additive imports: `RacingSimulation`, `driveTruck`, `aiInput`, `NEUTRAL` from `@rmc/multiplayer-client/racing`; track metadata and geometry from `@rmc/multiplayer-client/racing-track`. Server and browser use identical core rules and track version 1. Existing root imports remain compatible.
+
+Capacity includes waiting humans. Departure substitutes AI for that race; reconnect is a new participant and cannot reclaim a truck or score. Hosting interruption resets in-memory state; no accounts, private codes or persistence. Target release package is 0.7.0; pin the verified release asset rather than a development checkout.
+
 Install the exact GitHub Release tarball URL and commit the lockfile.
 
 ```js
@@ -48,7 +62,7 @@ Use game key `gauntlet-2d` with the released shared client. Send `input` at 20 H
 
 `gameState` includes round, time, map, players (id, number, name, color, hero, x, y, hp, cooldown, shield, revive, facing, kills), enemies, generators, shots, items, keys, treasure, status, restartIn, event and exit. The entire snapshot is current for late join. Capacity is four; a fifth receives full status. All dead means defeat; two keys and all four destroyed generators unlock the exit. Victory or defeat automatically replays after ten seconds. Local pause does not stop the shared world. Stand near a downed ally for 2.5 seconds to revive. Reconnect is a fresh player; no persistent progress. No existing drawing, sumo or garden protocol changes.
 
-## Enter the Gungeon Clone (0.6.0)
+## Enter the Gungeon Clone (0.7.0)
 
 Use `new MultiplayerClient(endpoint, "gungeon", {create:true})` to create a private room, or `{code:"ABC123"}` to join an existing six-character code. `state.code` holds the assigned code. Retry uses the same code; an expired or invalid code produces `error` status. Capacity four, including the creator. The existing two-argument API is unchanged.
 

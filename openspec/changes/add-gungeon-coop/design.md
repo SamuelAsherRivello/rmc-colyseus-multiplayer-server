@@ -9,4 +9,4 @@ Use a 30Hz bounded simulation and 20Hz JSON snapshots, reusing the shared client
 ## Risks / Trade-offs
 In-memory hosting interruptions → clear reconnect state, documented limits, reconnect to same code if it still exists; expired codes report an explicit error. Maximum projectiles and enemy counts bound snapshots.
 ## Migration Plan
-Add compatible optional admission options; release server/client 0.6.0, verify all existing tests plus coded dungeon sessions, then pin the released client in the landscape frontend. Rollback uses existing deployment workflow.
+Add compatible optional admission options; release server/client 0.7.0, verify all existing tests plus coded dungeon sessions, then pin the released client in the landscape frontend. Rollback uses existing deployment workflow.

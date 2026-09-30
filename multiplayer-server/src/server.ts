@@ -10,6 +10,7 @@ import { SumoRoom } from "./sumo-room.js";
 import { Gauntlet2DRoom } from "./gauntlet2d-room.js";
 import { GardenRoom } from "./garden-room.js";
 import { GauntletRoom } from "./gauntlet-room.js";
+import { RacingRoom } from "./racing-room.js";
 
 const instance = randomUUID();
 const defaultMatchmaking = matchMaker.controller.invokeMethod.bind(matchMaker.controller);
@@ -17,7 +18,7 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
-const games = new Map<string, typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom>([["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom], ["gauntlet-3d", GauntletRoom]]);
+const games = new Map<string, typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom>([["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom], ["gauntlet-3d", GauntletRoom], ["dust-circuit-rally", RacingRoom]]);
 let joining: Promise<unknown> = Promise.resolve();
 class FullRoomError extends Error {}
 class AdmissionError extends Error { constructor(public status:number,message:string){super(message);} }
@@ -27,7 +28,7 @@ async function reserveDungeon(body:unknown) {
   const pending=joining.catch(()=>undefined).then(async()=>{
     const rooms=await matchMaker.query({name:'gungeon'});
     if(data.create===true){
-      if(rooms.length>=50)throw new AdmissionError(503,'Too many rooms � try again later');
+      if(rooms.length>=50)throw new AdmissionError(503,'Too many rooms - try again later');
       let code='';do {code=randomUUID().replace(/-/g,'').slice(0,6).toUpperCase();}while(rooms.some(r=>r.metadata?.code===code));
       const room=await matchMaker.createRoom('gungeon',{code});
       return {reservation:await matchMaker.joinById(room.roomId),code};
@@ -92,9 +93,3 @@ gameServer.define("feasibility", ProbeRoom);
 const server = await gameServer.serverless();
 if (!process.env.VERCEL) server.listen(Number(process.env.PORT) || 2567, "0.0.0.0");
 export default server;
-
-
-
-
-
-

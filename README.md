@@ -2,13 +2,21 @@
 
 # RMC Colyseus Multiplayer Server
 
-A reusable Colyseus backend and shared browser client for small multiplayer demos. Players join anonymously, receive a name and color, and share a room with automatic departure cleanup. Hosted on Vercel Hobby; consuming browser projects can run on GitHub Pages.
+Rivello Multimedia Consulting (RMC), led by [Samuel Asher Rivello](https://www.samuelasherrivello.com/) created this relay server using Colyseus as a prototype backend for new multiplayer games.
 
 ## Live Demos
 
 This repository provides the shared multiplayer service and has no standalone demo. Play the projects that use it:
 
-- **[Multiplayer Draw](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/)** — draw together from separate computers or browser tabs. [Source repository](https://github.com/SamuelAsherRivello/babylon-lite-multiplayer-draw).
+- [**Enter the Gungeon Clone**](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) — survive bullet waves together in private 1–4-player rooms (frontend in development).
+- [**Garden Chat**](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) — wander a shared garden and chat with other visitors.
+- [**Gauntlet Clone 2D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) — cooperate to battle monsters, revive allies, and escape a tile-based dungeon.
+- [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
+- [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — draw together from separate computers or browser tabs.
+- [**Sumo Battle**](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) — push opponents out of the ring in an online sumo arena.
+- [**Super Offroad Clone**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race off-road trucks together in Dust Circuit Rally (frontend in development).
+
+Whenever a new game updates this server, add or update its demo bullet here and its entry in the supported game registry, keeping the demo list in alphabetical order by game name.
 
 See the [supported game registry](multiplayer-server/documentation/games.md) for room keys and client versions.
 
@@ -150,4 +158,4 @@ Deployment explicitly assigns the canonical public alias after a tagged checkout
 
 ## Enter the Gungeon Clone
 
-[Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) � [Source](https://github.com/SamuelAsherRivello/babylon-lite-enter-the-gungeon-clone). `gungeon` adds private six-character rooms for 1�4 players, readiness, authoritative arena movement/combat, dodge invulnerability, three weapon patterns, shared upgrade rewards, revival and wave/boss progression. Existing shared-client callers remain compatible; optional admission options support create/join. Two-client integration and deterministic rule tests are included in local and live deployment checks. Fresh reconnect and in-memory hosting limits above apply.
+[Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) � [Source](https://github.com/SamuelAsherRivello/babylon-lite-enter-the-gungeon-clone). `gungeon` adds private six-character rooms for 1�4 players, readiness, authoritative arena movement/combat, dodge invulnerability, three weapon patterns, shared upgrade rewards, revival and wave/boss progression. Existing shared-client callers remain compatible; optional admission options support create/join. Two-client integration and deterministic rule tests are included in local and live deployment checks. Fresh reconnect and in-memory hosting limits above apply.
