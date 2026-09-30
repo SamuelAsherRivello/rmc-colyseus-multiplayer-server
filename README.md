@@ -13,7 +13,7 @@ This repository provides the shared multiplayer service and has no standalone de
 - [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
 - [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — draw together from separate computers or browser tabs.
 - [**Sumo Battle**](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) — push opponents out of the ring in an online sumo arena.
-- [**Super Offroad Clone**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race off-road trucks together in Dust Circuit Rally.
+- [**Super Offroad Clone**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race off-road trucks together in Dust Circuit Rally (frontend in development).
 
 Whenever a new game updates this server, add or update its demo bullet here and its entry in the supported game registry, keeping the demo list in alphabetical order by game name.
 
