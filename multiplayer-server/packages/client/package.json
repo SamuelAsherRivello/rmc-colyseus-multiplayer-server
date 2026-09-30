@@ -1,9 +1,13 @@
 {
   "name": "@rmc/multiplayer-client",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "main": "index.js",
-  "exports": {".": "./index.js", "./racing": "./racing-simulation.js", "./racing-track": "./racing-track.js"},
+  "exports": {
+    ".": "./index.js",
+    "./racing": "./racing-simulation.js",
+    "./racing-track": "./racing-track.js"
+  },
   "files": [
     "index.js",
     "README.md",
