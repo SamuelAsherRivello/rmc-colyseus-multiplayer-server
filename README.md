@@ -2,7 +2,7 @@
 
 # RMC Colyseus Multiplayer Server
 
-Rivello Multimedia Consulting, led by [Samuel Asher Rivello](https://www.samuelasherrivello.com/) created this relay server using Colyseus as a prototype backend for new multiplayer games.
+Rivello Multimedia Consulting (RMC), led by [Samuel Asher Rivello](https://www.samuelasherrivello.com/) created this relay server using Colyseus as a prototype backend for new multiplayer games.
 
 ## Live Demos
 
