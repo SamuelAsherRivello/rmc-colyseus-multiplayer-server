@@ -2,6 +2,10 @@
 
 # RMC Colyseus Multiplayer Server
 
+## Dust Circuit Rally
+
+The isolated `dust-circuit-rally` room supports four connected humans and four racing trucks, filling the grid with AI. It provides authoritative steering, acceleration, brake/reverse, nitro, terrain/jumps, collisions, timed pickups, directional checkpoints, three-lap completion and replay. Late arrivals wait; departing racers become AI. Reconnect creates a fresh participant. The shared package adds browser-safe racing simulation and track exports for offline play and prediction without changing existing games. Racing rule and live-capable integration checks run in `npm test`. The game frontend is under development. Hosting resets still discard race state.
+
 A reusable Colyseus backend and shared browser client for small multiplayer demos. Players join anonymously, receive a name and color, and share a room with automatic departure cleanup. Hosted on Vercel Hobby; consuming browser projects can run on GitHub Pages.
 
 ## Live Demos
