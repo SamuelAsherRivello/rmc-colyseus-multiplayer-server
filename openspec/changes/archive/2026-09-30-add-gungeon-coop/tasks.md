@@ -4,5 +4,5 @@
 - [x] 1.2 Implement code-aware admission and shared client options; verify two-client sync, isolation, hot join/drop, reconnect and four-seat capacity tests.
 ## 2. Delivery
 - [x] 2.1 Update registry and API documentation; verify contract and hosting limitations match implementation.
-- [ ] 2.2 Run typecheck and all regressions; release server/client and verify public health and live dungeon tests.
-- [ ] 2.3 Sync and archive completed server change after live gates pass.
+- [x] 2.2 Run typecheck and all regressions; release server/client and verify public health and live dungeon tests.
+- [x] 2.3 Sync accepted server specifications; verify all delta requirements are present in the maintained specification. Archive follows this verified sync.
