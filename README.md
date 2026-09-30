@@ -8,7 +8,14 @@ Rivello Multimedia Consulting (RMC), led by [Samuel Asher Rivello](https://www.s
 
 This repository provides the shared multiplayer service and has no standalone demo. Play the projects that use it:
 
-- **[Multiplayer Draw](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/)** — draw together from separate computers or browser tabs. [Source repository](https://github.com/SamuelAsherRivello/babylon-lite-multiplayer-draw).
+- [**Garden Chat**](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) — wander a shared garden and chat with other visitors.
+- [**Gauntlet Clone 2D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) — cooperate to battle monsters, revive allies, and escape a tile-based dungeon.
+- [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
+- [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — draw together from separate computers or browser tabs.
+- [**Sumo Battle**](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) — push opponents out of the ring in an online sumo arena.
+- [**Super Offroad Clone**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race off-road trucks together in Dust Circuit Rally; frontend in development.
+
+Whenever a new game updates this server, add or update its demo bullet here and its entry in the supported game registry, keeping the demo list in alphabetical order by game name.
 
 See the [supported game registry](multiplayer-server/documentation/games.md) for room keys and client versions.
 

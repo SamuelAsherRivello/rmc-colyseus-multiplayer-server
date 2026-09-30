@@ -17,6 +17,10 @@
   repositories. This server has no standalone playable demo.
 - Keep the demo lists and `multiplayer-server/documentation/games.md` aligned
   with supported consumers. Do not list unrelated games.
+- Whenever a new game updates this server, add or update its root README
+  Live Demos bullet and supported game registry entry. Use one bullet per game
+  in the format `[**Game Name**](GitHub Pages URL) — short description.` and
+  keep the list in alphabetical order by game name. Label demos still in development.
 - Preserve release tarball names and public API compatibility when moving files.
 
 ## Verification
