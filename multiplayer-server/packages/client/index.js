@@ -2,9 +2,10 @@ import { Client } from "@colyseus/sdk";
 
 /** Shared anonymous session lifecycle. Each successful join creates a fresh identity. */
 export class MultiplayerClient {
-  constructor(endpoint, game = "multiplayer-draw") {
+  constructor(endpoint, game = "multiplayer-draw", options = {}) {
     this.endpoint = endpoint.replace(/\/$/, "");
     this.game = game;
+    this.options = { ...options };
     this.listeners = new Set();
     this.state = { status: "idle", players: [], strokes: new Map(), gameState: null, chats: [], capacity: 12, sessionId: null, error: "" };
     this.stopped = true;
@@ -23,13 +24,16 @@ export class MultiplayerClient {
     this.emit("status");
     let room;
     try {
-      const response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", signal: AbortSignal.timeout(15000) });
-      const reservation = await response.json();
+      const response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(this.options), signal: AbortSignal.timeout(15000) });
+      const payload = await response.json();
+      const reservation = payload.reservation || payload;
       if (!response.ok) {
         const error = new Error(reservation.error || "Server unavailable");
         error.full = response.status === 409;
+        error.expired = response.status === 404 || response.status === 400;
         throw error;
       }
+      if (payload.code) { this.options = { code: payload.code }; this.state.code = payload.code; }
       room = await new Client(this.endpoint).consumeSeatReservation(reservation);
       room.reconnection.enabled = false;
       if (this.stopped || generation !== this.generation) { await room.leave(); return; }
@@ -88,7 +92,7 @@ export class MultiplayerClient {
     } catch (error) {
       if (room) void room.leave();
       if (generation !== this.generation || this.stopped) return;
-      if (error.full) {
+      if (error.expired) { this.state.status = "error"; this.state.error = error.message; this.emit("status"); } else if (error.full) {
         this.state.status = "full";
         this.state.error = "This room is full. Try again when someone leaves.";
         this.emit("status");
