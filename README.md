@@ -2,17 +2,20 @@
 
 # RMC Colyseus Multiplayer Server
 
-## Dust Circuit Rally
-
-The isolated `dust-circuit-rally` room supports four connected humans and four racing trucks, filling the grid with AI. It provides authoritative steering, acceleration, brake/reverse, nitro, terrain/jumps, collisions, timed pickups, directional checkpoints, three-lap completion and replay. Late arrivals wait; departing racers become AI. Reconnect creates a fresh participant. The shared package adds browser-safe racing simulation and track exports for offline play and prediction without changing existing games. Racing rule and live-capable integration checks run in `npm test`. The game frontend is under development. Hosting resets still discard race state.
-
-A reusable Colyseus backend and shared browser client for small multiplayer demos. Players join anonymously, receive a name and color, and share a room with automatic departure cleanup. Hosted on Vercel Hobby; consuming browser projects can run on GitHub Pages.
+Rivello Multimedia Consulting (RMC), led by [Samuel Asher Rivello](https://www.samuelasherrivello.com/) created this relay server using Colyseus as a prototype backend for new multiplayer games.
 
 ## Live Demos
 
 This repository provides the shared multiplayer service and has no standalone demo. Play the projects that use it:
 
-- **[Multiplayer Draw](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/)** — draw together from separate computers or browser tabs. [Source repository](https://github.com/SamuelAsherRivello/babylon-lite-multiplayer-draw).
+- [**Garden Chat**](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) — wander a shared garden and chat with other visitors.
+- [**Gauntlet Clone 2D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) — cooperate to battle monsters, revive allies, and escape a tile-based dungeon.
+- [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
+- [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — draw together from separate computers or browser tabs.
+- [**Sumo Battle**](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) — push opponents out of the ring in an online sumo arena.
+- [**Super Offroad Clone**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race off-road trucks together in Dust Circuit Rally.
+
+Whenever a new game updates this server, add or update its demo bullet here and its entry in the supported game registry, keeping the demo list in alphabetical order by game name.
 
 See the [supported game registry](multiplayer-server/documentation/games.md) for room keys and client versions.
 
