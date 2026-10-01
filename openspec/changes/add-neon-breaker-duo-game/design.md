@@ -14,7 +14,7 @@ The service registers one Colyseus room class per game and routes browser client
 
 - Place pure simulation rules in a browser-safe JavaScript module so Node rule tests and the shipped shared client can use the same snapshots without duplicating rules; room networking remains TypeScript.
 - Use a 320×576 logical board, a 30 Hz simulation, and 20 Hz snapshots; include numeric paddle/ball/brick identifiers and only JSON-safe arrays/objects in snapshots.
-- Assign lane ownership by lowest free seat at join; clamp paddle centers to that lane, reject unknown message shapes and cap each client at 60 messages/second.
+- Assign paddle ownership by lowest free seat at join. Both paddles move across the full width and may overlap; Player 1's paddle center is at y=490, and Player 2's is at y=440. Clamp each paddle by its own half width at the outer board edges, reject unknown message shapes, and cap each client at 60 messages/second.
 - Broadcast complete compact snapshots because the whole board is small and snapshots simplify late-join consistency.
 - Keep the new key outside all existing game classes; admission still uses the shared serialized single-room reservation path.
 
