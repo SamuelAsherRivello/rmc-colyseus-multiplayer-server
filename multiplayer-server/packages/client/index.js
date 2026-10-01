@@ -19,7 +19,7 @@ export class MultiplayerClient {
     const generation = ++this.generation;
     clearTimeout(this.timer);
     const old = this.room; this.room = undefined;
-    if (old) void old.leave();
+    if (old) { old.reconnection.enabled = false; void old.leave(); }
     this.state = { ...this.state, status: "connecting", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], error: "" };
     this.emit("status");
     let room;
@@ -39,7 +39,19 @@ export class MultiplayerClient {
         if (payload.token) this.state.reconnectToken = payload.token;
       }
       room = await new Client(this.endpoint).consumeSeatReservation(reservation);
-      room.reconnection.enabled = false;
+      const recoversSeat = this.game === 'bomberman' || this.game === 'ring-rivals';
+      room.reconnection.enabled = recoversSeat;
+      if (recoversSeat) {
+        room.reconnection.maxRetries = 18; room.reconnection.minDelay = 200; room.reconnection.maxDelay = 1000; room.reconnection.minUptime = 0;
+        // The SDK can already have a retry timer queued when a consumer leaves.
+        // Guard the public reconnect entry point against a stale lifecycle.
+        const reconnect = room.connection.reconnect.bind(room.connection);
+        room.connection.reconnect = options => {
+          if (!this.stopped && generation === this.generation && room.reconnection.enabled) reconnect(options);
+        };
+        room.onDrop(() => { this.state.status = 'reconnecting'; this.state.error = 'Connection interrupted. Recovering your seat…'; this.emit('status'); });
+        room.onReconnect(() => { this.state.status = 'connected'; this.state.error = ''; room.send('snapshot'); this.emit('status'); });
+      }
       if (this.stopped || generation !== this.generation) { await room.leave(); return; }
       this.room = room;
       this.state.sessionId = room.sessionId;
@@ -95,7 +107,7 @@ export class MultiplayerClient {
       room.onMessage("snapshot", () => clearTimeout(snapshotDeadline));
       room.onLeave(() => clearTimeout(snapshotDeadline));
     } catch (error) {
-      if (room) void room.leave();
+      if (room) { room.reconnection.enabled = false; void room.leave(); }
       if (generation !== this.generation || this.stopped) return;
       if (error.expired) { this.state.status = "error"; this.state.error = error.message; this.emit("status"); } else if (error.full) {
         this.state.status = "full";
@@ -117,8 +129,10 @@ export class MultiplayerClient {
     this.stopped = true; this.generation++;
     clearTimeout(this.timer);
     const room = this.room; this.room = undefined;
-    if (room) void room.leave();
+    if (room) { room.reconnection.enabled = false; void room.leave(); }
     this.state = { ...this.state, status: "offline", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], roomId: null };
     this.emit("status");
   }
 }
+
+

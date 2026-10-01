@@ -1,6 +1,6 @@
 # RMC Multiplayer Client
 
-## Street Fighter II Clone (0.8.0)
+## Street Fighter II Clone (0.9.4 target)
 
 Create `new MultiplayerClient(endpoint, "street-fighter-ii", { create: true })` to host a private duel, or pass `{ code: "ABC123" }` to join. The creator receives a six-character `state.code`; share that code or the page URL with `?room=ABC123`. Capacity is exactly two. The server returns each seat a private reconnect token and the shared client retries it automatically for 15 seconds. A successful reconnect keeps the same fighter seat and match state. Tokens and rooms live in memory; a process restart, serverless instance split, or expired window ends the invite.
 
@@ -35,7 +35,7 @@ session.connect();
 State exposes connection status, sessionId, roomId, players, capacity, error, and a Map of strokes.
 Messages: cursor ([x,y] or null), stroke ({id, offset, points, complete}), erase (server stroke ID).
 Coordinates are normalized in [0,1]. Stroke batches contain at most 64 points.
-On disconnect the state clears and automatic retry creates a fresh identity. Full rooms require explicit connect() retry.
+On disconnect the state clears and automatic retry creates a fresh identity by default. Bomberman and Ring Rivals explicitly enable SDK seat recovery; other games keep their existing behavior. Full rooms require explicit connect() retry.
 Do not put credentials in frontend configuration. Persistent-user-rejoins is deferred.
 
 ## Live Demos
@@ -43,6 +43,7 @@ Do not put credentials in frontend configuration. Persistent-user-rejoins is def
 This package is part of **RMC Colyseus Multiplayer Server**, which has no standalone demo. These consuming projects use the shared service:
 
 - [Multiplayer Draw](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — a shared drawing canvas with hot join and departure cleanup.
+- [Street Fighter II Clone](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/) — private server-authoritative arcade duels with bounded same-seat recovery. (In development.)
 
 See the [server README](../../../README.md) for setup and the [game registry](../../documentation/games.md) for supported consumers.
 
@@ -77,3 +78,27 @@ Use `new MultiplayerClient(endpoint, "gungeon", {create:true})` to create a priv
 Send `weapon`: `pistol`, `scatter`, `carbine` in the lobby; `ready` toggles readiness and the run starts when all connected lobby players are ready. Hot joins during a run enter with full health and three seconds of protection. Send `input` at 20Hz: `{x,y,ax,ay,shoot,roll}` with finite axes within [-1,1] and boolean actions. Inputs expire after 300ms; local pause/blur must zero input. Server owns position, damage, bullets, enemy AI, loot, revives and progression. Friendly fire is disabled. `upgrade` accepts `damage`, `haste`, `vitality`, `agility` during the ten-second break and spends one personal choice earned by the whole team. Stand within 1.35 units of a downed ally for two seconds to revive. `restart` is accepted only from the lowest connected seat after defeat.
 
 `gameState` exposes code, phase (lobby/combat/break/defeat), wave, round, time, breakIn, width/height, cover, props, players, enemies, shots, loot and event. Player state includes hp/maxHp, weapon, ready, shield, rolling, rollCooldown, revive, damage/haste/speed, credits and kills. Enemy shots are marked `enemy:true`. Boss every fifth wave. Snapshots are full state for hot joins. All-dead ends the run. Disconnect removes presence and owned shots; reconnect creates a fresh identity in the surviving room. Last departure disposes the room. Hosting limits and deployment resets still apply; runs are not durable.
+
+## Neon Breaker Duo (shared client 0.7.0+)
+
+Create `new MultiplayerClient(endpoint, "neon-breaker-duo")`. Capacity is two; the first player owns the left lane and the second owns the right lane. Send `input` at 20 Hz with `{x}` where `x` is a finite normalized lane coordinate in `[0,1]`; send `launch` to launch a waiting ball and `restart` after the shared outcome. The server clamps lane bounds, validates messages and rate limits clients to 60 messages per second. Send neutral input on blur, local pause and pointer cancellation; local pause never pauses the shared match.
+
+`state.gameState` and `gameState` events expose `{width,height,wave,waves,score,lives,outcome,time,paddles,balls,bricks,drops,effects}`. The full snapshot is sent on join. Normal bricks award 10; reinforced bricks award 25. Three shared lives span three waves. Wide paddles last eight seconds; multiball is capped at three. A full room requires explicit retry. Disconnect frees and centers its lane; rejoining uses a fresh anonymous identity. Rooms are ephemeral and may reset when empty or during deployment. There are no accounts or durable scores.
+## Bomberman Clone (0.9.0)
+
+Use game key `bomberman` with `{create:true}` or `{code:'ABC123'}`. Capacity is four including reserved recovery seats. Send `ready` to toggle readiness; at least two connected players must ready before the three-second countdown. Send `color` with an unoccupied integer 0–3 in lobby. Late arrivals spectate until the next round.
+
+Send input at 20Hz `{seq,x,y,bomb}`: increasing nonnegative safe integer sequence, finite axes within [-1,1], boolean bomb. Movement expires after 300ms. Server owns collision, bomb fuse/capacity, blasts, chain reactions, block destruction, elimination and outcomes. `gameState` exposes phase, code, round, serverTick, remaining, winner, people, board, bombs, blasts and players; each player includes ack. Additive `@rmc/multiplayer-client/bomberman` export provides identical arena rules for prediction.
+
+Bomberman and Ring Rivals enable SDK recovery: unconsented drops reserve the same session for 15 seconds. Consented leave removes immediately. On successful reconnect the shared client requests a new snapshot; final expiry returns to normal retry/admission behavior. Host resets destroy in-memory rooms and are different from bounded disconnect recovery. Vercel currently caps a function session at five minutes; disclose interruptions and do not change requested round rules to hide them.
+
+## Ring Rivals (0.9.3 target)
+
+Create a private room with `new MultiplayerClient(endpoint, "ring-rivals", { create: true })`; join with `{ code: "ABC123" }`. `state.code` contains the six-character invite code. Capacity is two. Select `rook` or `flash` using `select` with `{ boxer }`, then send `ready`. Both players may select the same boxer.
+
+Send sequenced `input` messages with `{ action, sequence }`; actions are `jab-head`, `cross-head`, `jab-body`, `cross-body`, `guard-high`, `guard-low`, `dodge-left`, `dodge-right`, and `neutral`. Sequence must be a strictly increasing safe integer. The server owns move timing, guard/evasion checks, health, stamina, round clock, score and outcomes. Neutralize input on blur and pointer cancellation; clients never send positions or damage.
+
+`gameState` snapshots include `timestamp`, `tick`, `phase`, `round`, `roundSeconds`, `countdown`, `rounds`, `winner`, `result`, and two seat-ordered fighters with boxer, connection, health, stamina, action, animation frame, evasion offset, and hit flash. Updates run at 20 Hz; the server simulation runs at 30 Hz. Use the timestamped snapshots for smooth remote interpolation and reconcile local movement prediction to authority.
+
+Matches are best of three, with 60-second rounds, knockout and health decisions, drawn exact-health rounds, and a drawn match after three rounds when the score is tied. A dropped player has 15 seconds to recover the same seat; the active round clock stops during the drop. Expiry forfeits the match. Rooms are in-memory and deployments can interrupt a match.
+

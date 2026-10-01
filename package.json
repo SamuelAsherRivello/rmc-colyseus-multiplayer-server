@@ -1,6 +1,6 @@
 {
   "name": "rmc-colyseus-multiplayer-server",
-  "version": "0.7.0",
+  "version": "0.9.3",
   "private": true,
   "type": "module",
   "main": "server.ts",
@@ -11,7 +11,7 @@
     "dev": "tsx server.ts",
     "typecheck": "tsc --noEmit",
     "probe": "node scripts/probe.mjs",
-    "test": "node --import tsx --test --test-concurrency=1 multiplayer-server/test/garden.mjs multiplayer-server/test/gauntlet-integration.mjs multiplayer-server/test/gauntlet-rules.mjs multiplayer-server/test/gauntlet2d-integration.mjs multiplayer-server/test/gauntlet2d-rules.mjs multiplayer-server/test/gungeon-integration.mjs multiplayer-server/test/gungeon-rules.mjs multiplayer-server/test/integration.mjs multiplayer-server/test/racing-integration.mjs multiplayer-server/test/racing-rules.mjs multiplayer-server/test/street-fighter-integration.mjs multiplayer-server/test/street-fighter-rules.mjs multiplayer-server/test/sumo-integration.mjs multiplayer-server/test/sumo-rules.mjs"
+    "test": "node --import tsx --test --test-concurrency=1 multiplayer-server/test/*.mjs"
   },
   "dependencies": {
     "@colyseus/core": "0.17.44",

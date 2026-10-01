@@ -1,13 +1,14 @@
 {
   "name": "@rmc/multiplayer-client",
-  "version": "0.8.0",
+  "version": "0.9.3",
   "type": "module",
   "main": "index.js",
   "exports": {
     ".": "./index.js",
     "./racing": "./racing-simulation.js",
     "./racing-track": "./racing-track.js",
-    "./street-fighter": "./street-fighter-simulation.js"
+    "./street-fighter": "./street-fighter-simulation.js",
+    "./bomberman": "./bomberman-rules.js"
   },
   "files": [
     "index.js",
@@ -16,7 +17,8 @@
     "racing-track.js",
     "street-fighter-simulation.js",
     "street-fighter-combat.js",
-    "street-fighter-fighters.js"
+    "street-fighter-fighters.js",
+    "bomberman-rules.js"
   ],
   "dependencies": {
     "@colyseus/sdk": "0.17.43"
