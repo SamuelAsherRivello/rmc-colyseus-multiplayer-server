@@ -21,7 +21,7 @@ All packages are @rmc/multiplayer-client. Before changing a shared protocol, rev
 
 ## Bomberman Clone
 
-bomberman — 2–4 players, private codes, authoritative bomb arena, 15-second identity recovery. The next release adds capped bomb/range/speed pickups, telegraphed sudden death, automatic rounds, first-to-three matches and ready-gated rematches. A monotonic elapsed-time accumulator keeps fixed 60Hz simulation ticks consistent despite timer jitter; snapshots remain 20Hz. The public preview currently pins 0.9.2; full-game client acceptance follows the new server release. [Multiplayer preview](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/?mode=online).
+bomberman — 2–4 players, private codes, authoritative bomb arena, 15-second identity recovery. Version 0.9.4 adds capped bomb/range/speed pickups, telegraphed sudden death, automatic rounds, first-to-three matches and ready-gated rematches. A monotonic elapsed-time accumulator keeps fixed 60Hz simulation ticks consistent despite timer jitter; snapshots remain 20Hz. The public WIP pins 0.9.4; two public browsers verified a full first-to-three match and fresh rematch on 2026-10-01. The user accepts the five-minute host limit: expired rooms require recreation and host resets do not retain identity or scores. [Multiplayer preview](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/?mode=online).
 
 ## Street Fighter II Clone
 
