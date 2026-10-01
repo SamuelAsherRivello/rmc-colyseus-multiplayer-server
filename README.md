@@ -16,6 +16,7 @@ This repository provides the shared multiplayer service and has no standalone de
 - [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
 - [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — draw together from separate computers or browser tabs.
 - [**Neon Breaker Duo**](https://samuelasherrivello.github.io/babylon-lite-arkanoid-clone/) — co-operate to clear a neon brick field together. (In development)
+- [**Ring Rivals**](https://samuelasherrivello.github.io/babylon-lite-ring-rivals/) — fight private online 1v1 boxing bouts from mirrored opponent-focused views. (In development)
 - [**Sumo Battle**](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) — push opponents out of the ring in an online sumo arena.
 
 Whenever a new game updates this server, add or update its demo bullet here and its entry in the supported game registry, keeping the demo list in alphabetical order by game name.
@@ -93,7 +94,8 @@ Run commands from the repository root. Root TypeScript and Vercel configuration 
 | Player identity | Lowest free ordered seat; fresh session ID, server-generated deterministic name/color; existing seats remain unchanged. Active colors are distinct. |
 | Shared client | `MultiplayerClient` exposes status, session ID, room ID, players, occupancy, retry, game messages, and subscription/teardown. |
 | Admission and capacity | One room per game within the running instance; capacity 12 for drawing; full status with explicit retry and no normal overflow room. Direct drawing matchmaking is blocked. |
-| Fresh reconnect | Exponential backoff, capped at 15 seconds; SDK identity restoration disabled. No persistent-user identity. |
+| Fresh reconnect | Exponential backoff, capped at 15 seconds, remains the default; SDK identity restoration is enabled only for Bomberman and Ring Rivals, whose rooms explicitly reserve seats. No persistent-user identity. |
+| Bounded seat recovery | Bomberman and Ring Rivals can reserve a dropped player's seat for 15 seconds; the room-specific simulation stops input and handles expiry. |
 | Drawing relay | Normalized strokes/cursors, active-stroke snapshots for late joiners, whole-stroke ownership enforcement, departure cleanup. |
 
 **Future feature: `persistent-user-rejoins`.** Not implemented. Every reconnect and refresh creates a fresh user, and previous artwork is removed.

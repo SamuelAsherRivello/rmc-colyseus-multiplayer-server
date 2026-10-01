@@ -27,7 +27,7 @@ session.connect();
 State exposes connection status, sessionId, roomId, players, capacity, error, and a Map of strokes.
 Messages: cursor ([x,y] or null), stroke ({id, offset, points, complete}), erase (server stroke ID).
 Coordinates are normalized in [0,1]. Stroke batches contain at most 64 points.
-On disconnect the state clears and automatic retry creates a fresh identity. Full rooms require explicit connect() retry.
+On disconnect the state clears and automatic retry creates a fresh identity by default. Bomberman and Ring Rivals explicitly enable SDK seat recovery; other games keep their existing behavior. Full rooms require explicit connect() retry.
 Do not put credentials in frontend configuration. Persistent-user-rejoins is deferred.
 
 ## Live Demos
@@ -81,5 +81,15 @@ Use game key `bomberman` with `{create:true}` or `{code:'ABC123'}`. Capacity is 
 
 Send input at 20Hz `{seq,x,y,bomb}`: increasing nonnegative safe integer sequence, finite axes within [-1,1], boolean bomb. Movement expires after 300ms. Server owns collision, bomb fuse/capacity, blasts, chain reactions, block destruction, elimination and outcomes. `gameState` exposes phase, code, round, serverTick, remaining, winner, people, board, bombs, blasts and players; each player includes ack. Additive `@rmc/multiplayer-client/bomberman` export provides identical arena rules for prediction.
 
-Only this game enables SDK recovery: unconsented drops reserve the same session for 15 seconds, stop its input and retain blast vulnerability. Consented leave removes immediately. On successful reconnect the shared client requests a new snapshot; final expiry retries admission and cannot promise the old identity. Host resets destroy in-memory rooms and are different from bounded disconnect recovery. Vercel currently caps a function session at five minutes; disclose interruptions and do not change requested round rules to hide them.
+Bomberman and Ring Rivals enable SDK recovery: unconsented drops reserve the same session for 15 seconds. Consented leave removes immediately. On successful reconnect the shared client requests a new snapshot; final expiry returns to normal retry/admission behavior. Host resets destroy in-memory rooms and are different from bounded disconnect recovery. Vercel currently caps a function session at five minutes; disclose interruptions and do not change requested round rules to hide them.
+
+## Ring Rivals (0.9.3 target)
+
+Create a private room with `new MultiplayerClient(endpoint, "ring-rivals", { create: true })`; join with `{ code: "ABC123" }`. `state.code` contains the six-character invite code. Capacity is two. Select `rook` or `flash` using `select` with `{ boxer }`, then send `ready`. Both players may select the same boxer.
+
+Send sequenced `input` messages with `{ action, sequence }`; actions are `jab-head`, `cross-head`, `jab-body`, `cross-body`, `guard-high`, `guard-low`, `dodge-left`, `dodge-right`, and `neutral`. Sequence must be a strictly increasing safe integer. The server owns move timing, guard/evasion checks, health, stamina, round clock, score and outcomes. Neutralize input on blur and pointer cancellation; clients never send positions or damage.
+
+`gameState` snapshots include `timestamp`, `tick`, `phase`, `round`, `roundSeconds`, `countdown`, `rounds`, `winner`, `result`, and two seat-ordered fighters with boxer, connection, health, stamina, action, animation frame, evasion offset, and hit flash. Updates run at 20 Hz; the server simulation runs at 30 Hz. Use the timestamped snapshots for smooth remote interpolation and reconcile local movement prediction to authority.
+
+Matches are best of three, with 60-second rounds, knockout and health decisions, drawn exact-health rounds, and a drawn match after three rounds when the score is tied. A dropped player has 15 seconds to recover the same seat; the active round clock stops during the drop. Expiry forfeits the match. Rooms are in-memory and deployments can interrupt a match.
 

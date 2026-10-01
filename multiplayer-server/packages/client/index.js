@@ -35,8 +35,9 @@ export class MultiplayerClient {
       }
       if (payload.code) { this.options = { code: payload.code }; this.state.code = payload.code; }
       room = await new Client(this.endpoint).consumeSeatReservation(reservation);
-      room.reconnection.enabled = this.game === 'bomberman';
-      if (this.game === 'bomberman') {
+      const recoversSeat = this.game === 'bomberman' || this.game === 'ring-rivals';
+      room.reconnection.enabled = recoversSeat;
+      if (recoversSeat) {
         room.reconnection.maxRetries = 18; room.reconnection.minDelay = 200; room.reconnection.maxDelay = 1000; room.reconnection.minUptime = 0;
         // The SDK can already have a retry timer queued when a consumer leaves.
         // Guard the public reconnect entry point against a stale lifecycle.

@@ -13,6 +13,7 @@ import { GardenRoom } from "./garden-room.js";
 import { GauntletRoom } from "./gauntlet-room.js";
 import { RacingRoom } from "./racing-room.js";
 import { NeonBreakerRoom } from "./neon-breaker-room.js";
+import { RingRivalsRoom } from "./ring-rivals-room.js";
 
 const instance = randomUUID();
 const defaultMatchmaking = matchMaker.controller.invokeMethod.bind(matchMaker.controller);
@@ -20,7 +21,7 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
-const games = new Map<string, typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom>([["bomberman", BombermanRoom], ["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom], ["gauntlet-3d", GauntletRoom], ["dust-circuit-rally", RacingRoom], ["neon-breaker-duo", NeonBreakerRoom]]);
+const games = new Map<string, typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom | typeof RingRivalsRoom>([["bomberman", BombermanRoom], ["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom], ["gauntlet-3d", GauntletRoom], ["dust-circuit-rally", RacingRoom], ["neon-breaker-duo", NeonBreakerRoom], ["ring-rivals", RingRivalsRoom]]);
 let joining: Promise<unknown> = Promise.resolve();
 class FullRoomError extends Error {}
 class AdmissionError extends Error { constructor(public status:number,message:string){super(message);} }
@@ -77,7 +78,7 @@ const gameServer = new Server({
     app.get("/api/health", (_req, res) => res.json({ status: "ok", version: metadata.version, instance, games: [...games.keys()] }));
     app.post("/api/join/:game", async (req, res) => {
       if (!games.has(req.params.game)) { res.status(404).json({ error: "Unknown game" }); return; }
-      try { res.json(["gungeon", "bomberman"].includes(req.params.game) ? await reserveDungeon(req.body, req.params.game) : await reserve(req.params.game)); }
+      try { res.json(["gungeon", "bomberman", "ring-rivals"].includes(req.params.game) ? await reserveDungeon(req.body, req.params.game) : await reserve(req.params.game)); }
       catch (error) {
         if (error instanceof AdmissionError) res.status(error.status).json({ error: error.message });
         else if (error instanceof FullRoomError) res.status(409).json({ error: "Room full" });
