@@ -2,6 +2,7 @@
 
 | Game | Room key | Capacity | Client package | Frontend |
 |---|---|---|---|---|
+| Bomberman Clone | bomberman | 4 | 0.9.2+ | [Multiplayer preview](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/?mode=online) |
 | Dust Circuit Rally | dust-circuit-rally | 4 | 0.6.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) |
 | Garden Chat | garden-chat | 12 | 0.3.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) |
 | Gauntlet Clone 2D | gauntlet-2d | 4 | 0.4.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) |
@@ -19,5 +20,5 @@ All packages are @rmc/multiplayer-client. Before changing a shared protocol, rev
 
 ## Bomberman Clone
 
-bomberman — 2–4 players, private codes, authoritative bomb arena, 15-second identity recovery. Shared client 0.9.0 target. [Demo in development](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/).
+bomberman — 2–4 players, private codes, authoritative bomb arena, 15-second identity recovery. The next release adds capped bomb/range/speed pickups, telegraphed sudden death, automatic rounds, first-to-three matches and ready-gated rematches. A monotonic elapsed-time accumulator keeps fixed 60Hz simulation ticks consistent despite timer jitter; snapshots remain 20Hz. The public preview currently pins 0.9.2; full-game client acceptance follows the new server release. [Multiplayer preview](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/?mode=online).
 

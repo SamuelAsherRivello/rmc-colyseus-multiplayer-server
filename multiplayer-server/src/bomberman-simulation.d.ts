@@ -9,6 +9,7 @@ export class BombermanSimulation {
   remove(id:string):void;
   connected(id:string,value:boolean):void;
   ready(id:string):void;
+  rematch(id:string):void;
   color(id:string,color:unknown):void;
   input(id:string,data:unknown):boolean;
   step():void;
