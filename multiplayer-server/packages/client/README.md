@@ -1,5 +1,13 @@
 # RMC Multiplayer Client
 
+## Street Fighter II Clone (0.9.4 target)
+
+Create `new MultiplayerClient(endpoint, "street-fighter-ii", { create: true })` to host a private duel, or pass `{ code: "ABC123" }` to join. The creator receives a six-character `state.code`; share that code or the page URL with `?room=ABC123`. Capacity is exactly two. The server returns each seat a private reconnect token and the shared client retries it automatically for 15 seconds. A successful reconnect keeps the same fighter seat and match state. Tokens and rooms live in memory; a process restart, serverless instance split, or expired window ends the invite.
+
+Send `select` with `{ fighter: "ryu" | "chunLi" | "kaida" }` and `ready` with `{ ready: boolean }` in the lobby. The fight starts after both seats are connected and ready. `gameState` includes `phase`, `stage` (`dojo`, `harbor`, or `snow`), `countdown`, `reconnectRemaining`, `round`, `time`, `wins`, `winner`, `players`, `fighters`, and `event`. The stage is selected deterministically from the private invite code, so every client in a room shows the same authored backdrop. Each fighter snapshot exposes authoritative position, facing, health, current attack, stun, block and animation fields. The server simulates combat at 60 Hz and publishes full snapshots at 20 Hz. Clients can render fighter positions between snapshots with a small interpolation buffer; server values remain authoritative for combat and results. Send `input` at up to 20 Hz with a strictly increasing nonnegative safe integer `seq`, booleans `away`, `toward`, `up`, `down`, `jump`, and `punch`/`kick` as `false`, `light`, `medium`, or `heavy`. Inputs expire after 300 ms. Client positions, health, and results are never accepted. `rematch` with `{ ready: true }` restarts the best-of-three when both players agree. Local pause should send neutral input; it does not pause the shared duel.
+
+The shared combat rules and fighter data are also importable from `@rmc/multiplayer-client/street-fighter` for displays and offline tools; only server snapshots are authoritative online. Existing game keys and the two-argument `MultiplayerClient` API remain compatible.
+
 ## Dust Circuit Rally (0.7.0)
 
 Use `new MultiplayerClient(endpoint, 'dust-circuit-rally')`. Read `state.gameState`: `phase`, `round`, `time`, `raceTime`, `remaining`, `countdown`, `people`, `trucks`, `pickups`, `ranking` and `event`.
@@ -35,6 +43,7 @@ Do not put credentials in frontend configuration. Persistent-user-rejoins is def
 This package is part of **RMC Colyseus Multiplayer Server**, which has no standalone demo. These consuming projects use the shared service:
 
 - [Multiplayer Draw](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — a shared drawing canvas with hot join and departure cleanup.
+- [Street Fighter II Clone](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/) — private server-authoritative arcade duels with bounded same-seat recovery. (In development.)
 
 See the [server README](../../../README.md) for setup and the [game registry](../../documentation/games.md) for supported consumers.
 
@@ -75,11 +84,16 @@ Send `weapon`: `pistol`, `scatter`, `carbine` in the lobby; `ready` toggles read
 Create `new MultiplayerClient(endpoint, "neon-breaker-duo")`. Capacity is two; the first player owns the lower paddle and the second owns the upper paddle. Both can move over the full board width and overlap. Send `input` at 20 Hz with `{x}` where `x` is a finite normalized full-board coordinate in `[0,1]`; send `launch` to launch a waiting ball and `restart` after the shared outcome. The server bounds each paddle at the board edges, validates messages and rate limits clients to 60 messages per second. Send neutral input on blur, local pause and pointer cancellation; local pause never pauses the shared match.
 
 `state.gameState` and `gameState` events expose `{width,height,wave,waves,score,lives,outcome,time,paddles,balls,bricks,drops,effects}`. Each paddle snapshot includes its authoritative `seat`, `x`, `target`, `y`, and `width`; Player 1's y is 490 and Player 2's y is 440 on the 320×576 board. The full snapshot is sent on join. Normal bricks award 10; reinforced bricks award 25. Three shared lives span three waves. Wide paddles last eight seconds; multiball is capped at three. A full room requires explicit retry. Disconnect frees and centers a paddle horizontally while retaining its assigned y; rejoining uses a fresh anonymous identity. Rooms are ephemeral and may reset when empty or during deployment. There are no accounts or durable scores.
-## Bomberman Clone (0.9.0)
+`state.gameState` and `gameState` events expose `{width,height,wave,waves,score,lives,outcome,time,paddles,balls,bricks,drops,effects}`. The full snapshot is sent on join. Normal bricks award 10; reinforced bricks award 25. Three shared lives span three waves. Wide paddles last eight seconds; multiball is capped at three. A full room requires explicit retry. Disconnect frees and centers its lane; rejoining uses a fresh anonymous identity. Rooms are ephemeral and may reset when empty or during deployment. There are no accounts or durable scores.
+## Bomberman Clone (0.9.2+, next-release gameplay additions)
 
 Use game key `bomberman` with `{create:true}` or `{code:'ABC123'}`. Capacity is four including reserved recovery seats. Send `ready` to toggle readiness; at least two connected players must ready before the three-second countdown. Send `color` with an unoccupied integer 0–3 in lobby. Late arrivals spectate until the next round.
 
 Send input at 20Hz `{seq,x,y,bomb}`: increasing nonnegative safe integer sequence, finite axes within [-1,1], boolean bomb. Movement expires after 300ms. Server owns collision, bomb fuse/capacity, blasts, chain reactions, block destruction, elimination and outcomes. `gameState` exposes phase, code, round, serverTick, remaining, winner, people, board, bombs, blasts and players; each player includes ack. Additive `@rmc/multiplayer-client/bomberman` export provides identical arena rules for prediction.
+
+The next release adds `match`, `matchWinner`, exposed `powerups`, imminent `warnings` and `closed` sudden-death tiles. Players expose `capacity`, `range`, `speed` and `speedLevel`; unrevealed items and future wall schedules are not sent. Pickups cap capacity at five, range at eight and speed at three 15% upgrades. Hidden items appear after all overlapping blasts clear; later blasts destroy them. Server ticks use fixed 60Hz steps accumulated from monotonic elapsed time, rather than assuming each timer callback arrives on time. Interpolate remote timestamped snapshots; predict only local movement and reconcile acknowledgements.
+
+Phases are `lobby`, `countdown`, `playing`, `results` and `matchResults`. Rounds last at most two minutes; inward walls warn one second before closure during the final thirty seconds. Same-tick final eliminations draw without points. A surviving winner receives one point, with three-second score breaks and three-second next-round countdowns. First to three reaches `matchResults`; send `rematch` to toggle readiness there. All connected players must ready before a fresh match resets scores, arena, upgrades and inputs. Fewer than two connected players return to lobby after the current round resolves. Late arrivals spectate until the next round.
 
 Bomberman and Ring Rivals enable SDK recovery: unconsented drops reserve the same session for 15 seconds. Consented leave removes immediately. On successful reconnect the shared client requests a new snapshot; final expiry returns to normal retry/admission behavior. Host resets destroy in-memory rooms and are different from bounded disconnect recovery. Vercel currently caps a function session at five minutes; disclose interruptions and do not change requested round rules to hide them.
 
@@ -92,4 +106,3 @@ Send sequenced `input` messages with `{ action, sequence }`; actions are `jab-he
 `gameState` snapshots include `timestamp`, `tick`, `phase`, `round`, `roundSeconds`, `countdown`, `rounds`, `winner`, `result`, and two seat-ordered fighters with boxer, connection, health, stamina, action, animation frame, evasion offset, and hit flash. Updates run at 20 Hz; the server simulation runs at 30 Hz. Use the timestamped snapshots for smooth remote interpolation and reconcile local movement prediction to authority.
 
 Matches are best of three, with 60-second rounds, knockout and health decisions, drawn exact-health rounds, and a drawn match after three rounds when the score is tied. A dropped player has 15 seconds to recover the same seat; the active round clock stops during the drop. Expiry forfeits the match. Rooms are in-memory and deployments can interrupt a match.
-

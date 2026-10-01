@@ -7,7 +7,7 @@ export class MultiplayerClient {
     this.game = game;
     this.options = { ...options };
     this.listeners = new Set();
-    this.state = { status: "idle", players: [], strokes: new Map(), gameState: null, chats: [], capacity: 12, sessionId: null, error: "" };
+    this.state = { status: "idle", players: [], strokes: new Map(), gameState: null, chats: [], capacity: 12, sessionId: null, seat: null, error: "" };
     this.stopped = true;
     this.generation = 0;
     this.retryDelay = 1000;
@@ -33,7 +33,11 @@ export class MultiplayerClient {
         error.expired = response.status === 404 || response.status === 400;
         throw error;
       }
-      if (payload.code) { this.options = { code: payload.code }; this.state.code = payload.code; }
+      if (payload.code) {
+        this.options = { code: payload.code, ...(payload.token ? { reconnectToken: payload.token } : this.options.reconnectToken ? { reconnectToken: this.options.reconnectToken } : {}) };
+        this.state.code = payload.code;
+        if (payload.token) this.state.reconnectToken = payload.token;
+      }
       room = await new Client(this.endpoint).consumeSeatReservation(reservation);
       const recoversSeat = this.game === 'bomberman' || this.game === 'ring-rivals';
       room.reconnection.enabled = recoversSeat;
@@ -52,6 +56,7 @@ export class MultiplayerClient {
       this.room = room;
       this.state.sessionId = room.sessionId;
       this.state.roomId = room.roomId;
+      room.onMessage("identity", data => { this.state.seat = data?.seat ?? null; this.emit("identity"); });
       room.onMessage("snapshot", data => {
         this.state.players = data.players;
         this.state.strokes = new Map((data.strokes || []).map(s => [s.id, s]));
