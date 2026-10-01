@@ -11,6 +11,7 @@ export class BombermanSimulation {
   ready(id:string):void;
   rematch(id:string):void;
   color(id:string,color:unknown):void;
+  configure(id:string,data:unknown):boolean;
   input(id:string,data:unknown):boolean;
   step():void;
   snapshot():unknown;

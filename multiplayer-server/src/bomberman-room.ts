@@ -9,6 +9,7 @@ export class BombermanRoom extends Room {
     this.onMessage('input',(client,data)=>{if(this.accept(client))this.simulation.input(client.sessionId,data);});
     this.onMessage('ready',client=>{if(this.accept(client))this.simulation.ready(client.sessionId);});
     this.onMessage('rematch',client=>{if(this.accept(client))this.simulation.rematch(client.sessionId);});
+    this.onMessage('options',(client,data)=>{if(this.accept(client))this.simulation.configure(client.sessionId,data);});
     this.onMessage('color',(client,data)=>{if(this.accept(client))this.simulation.color(client.sessionId,data);});
     this.onMessage('snapshot',client=>{if(this.accept(client))this.snapshot(client);});
     // Timers can arrive unevenly. Advance fixed simulation ticks from elapsed

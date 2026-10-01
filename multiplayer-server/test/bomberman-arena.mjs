@@ -52,7 +52,9 @@ test('all four starts have mirrored blocks and hidden upgrade opportunities', ()
         assert.equal(g.hidden[index(x,y)], g.hidden[opposite]);
       }
     }
-    assert.deepEqual(new Set(g.hidden.filter(Boolean)), new Set(['bomb','range','speed']));
+    const upgrades = new Set(g.hidden.filter(Boolean));
+    for (const type of ['bomb','range','speed']) assert.ok(upgrades.has(type));
+    assert.ok([...upgrades].every(type => ['bomb','range','speed','glove','shield'].includes(type)));
     for (const p of g.players) {
       const x=Math.floor(p.x),y=Math.floor(p.y);
       const exits=[[x===1?1:-1,0],[0,y===1?1:-1]];

@@ -13,19 +13,19 @@ test('two real Colyseus clients complete first-to-three and ready a fresh rematc
    await until(asyncReady,'local server');
   }
   async function join(options){const c=new MultiplayerClient(endpoint,'bomberman',options);clients.push(c);void c.connect();await until(()=>c.state.status==='connected','admission');return c;}
-  const a=await join({create:true}),b=await join({code:a.state.code});a.send('ready');b.send('ready');
+  const a=await join({create:true}),b=await join({code:a.state.code}),c=await join({code:a.state.code}),d=await join({code:a.state.code});for(const player of [a,b,c,d])player.send('ready');
   let seq=1;
   for(let round=1;round<=3;round++){
    await until(()=>a.state.gameState.phase==='playing'&&a.state.gameState.round===round,'round '+round);
    assert.equal(a.state.gameState.players.find(p=>p.id===a.state.sessionId).capacity,1);
-   const placedAt=Date.now();a.send('input',{seq:seq++,x:0,y:0,bomb:true});
+   const placedAt=Date.now();for(const player of [a,c,d])player.send('input',{seq:seq,x:0,y:0,bomb:true});seq++;
    await until(()=>a.state.gameState.people.find(p=>p.id===b.state.sessionId).score===round,'authoritative score '+round);
    await until(()=>b.state.gameState.people.find(p=>p.id===b.state.sessionId).score===round,'peer score '+round);
    assert.ok(Date.now()-placedAt>=2400&&Date.now()-placedAt<4500,'real fuse follows simulation time despite timer jitter');
   }
   assert.equal(a.state.gameState.phase,'matchResults');assert.equal(b.state.gameState.phase,'matchResults');
   assert.equal(a.state.gameState.matchWinner,b.state.sessionId);assert.equal(b.state.gameState.matchWinner,b.state.sessionId);
-  a.send('rematch');await delay(200);assert.equal(a.state.gameState.phase,'matchResults');b.send('rematch');
+  await delay(3100);a.send('rematch');await delay(200);assert.equal(a.state.gameState.phase,'matchResults');for(const player of [b,c,d])player.send('rematch');
   await until(()=>a.state.gameState.phase==='playing'&&a.state.gameState.match===2,'rematch');
   assert.equal(a.state.gameState.round,1);assert.ok(a.state.gameState.people.every(p=>p.score===0));assert.equal(a.state.gameState.bombs.length,0);
   assert.ok(a.state.gameState.players.every(p=>p.capacity===1&&p.range===2&&p.speedLevel===0));
