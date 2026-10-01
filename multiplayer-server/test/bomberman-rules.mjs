@@ -7,6 +7,7 @@ test('two ready humans start countdown; inputs expire and forged input is reject
  s.add('b');s.ready('b');run(s,181);assert.equal(s.phase,'playing');
  assert.equal(s.input('a',{seq:1,x:100,y:0,bomb:false}),false);
  assert.equal(s.input('a',{seq:1,x:1,y:0,bomb:false}),true);assert.equal(s.input('a',{seq:1,x:-1,y:0,bomb:false}),false);
+ assert.equal(s.players.get('a').ack,-1,'receipt does not acknowledge unprocessed movement');s.step();assert.equal(s.players.get('a').ack,1);
  run(s,30);const x=s.game.players[0].x;run(s,30);assert.equal(s.game.players[0].x,x);
 });
 test('disconnect neutralizes input without removing vulnerable character',()=>{
