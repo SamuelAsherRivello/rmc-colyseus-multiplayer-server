@@ -15,7 +15,9 @@ test('private Bomberman admission, authoritative bombs, isolation, capacity and 
   const c=await join({code}),d=await join({code}),extra=await join({code});assert.equal(extra.state.status,'full');const other=await join({create:true});assert.notEqual(other.state.roomId,a.state.roomId);
   a.room.connection.close();await until(()=>a.state.status==='reconnecting','drop observed');await until(()=>a.state.status==='connected'&&a.state.sessionId===id,'same identity reconnect');
   d.disconnect();await until(()=>b.state.gameState.people.length===3,'consent removal');void extra.connect();await until(()=>extra.state.status==='connected','seat reuse');
+  const lostId=c.state.sessionId;c.room.reconnection.enabled=false;c.stopped=true;c.room.connection.close();await until(()=>b.state.gameState.people.some(p=>p.id===lostId&&!p.connected),'reserved dropped seat');await until(()=>!b.state.gameState.people.some(p=>p.id===lostId),'expired recovery removal',19000);
   const invalid=await join({code:'BAD'});assert.equal(invalid.state.status,'error');
  }finally{clients.forEach(c=>c.disconnect());await delay(300);server?.kill();}
 });
+
 
