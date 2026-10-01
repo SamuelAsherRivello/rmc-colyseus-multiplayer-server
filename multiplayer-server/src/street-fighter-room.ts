@@ -11,6 +11,7 @@ export class StreetFighterRoom extends Room {
   limits = new Map<string, { time: number; count: number }>();
 
   onCreate(options: { code: string }) {
+    this.simulation.setStageFromCode(options.code);
     this.setMetadata({ code: options.code });
     this.onMessage("snapshot", (client) => { if (this.accept(client)) client.send("snapshot", { players: this.players(), capacity: 2, gameState: this.simulation.snapshot() }); });
     this.onMessage("select", (client, data) => { if (this.accept(client)) this.simulation.select(client.sessionId, data?.fighter); });

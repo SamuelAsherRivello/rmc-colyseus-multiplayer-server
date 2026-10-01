@@ -15,6 +15,10 @@ function readyDuel(fighters = ["ryu", "ryu"]) {
 
 test("fighter roster, two-seat admission, and private token-safe snapshots", () => {
   const game = new StreetFighterSimulation();
+  game.setStageFromCode("AB1234");
+  assert.ok(["dojo", "harbor", "snow"].includes(game.snapshot().stage));
+  const sameInvite = new StreetFighterSimulation(); sameInvite.setStageFromCode("AB1234");
+  assert.equal(sameInvite.snapshot().stage, game.snapshot().stage, "invite code picks a stable shared stage");
   assert.ok(game.add("a", "secret-a")); assert.ok(game.add("b", "secret-b"));
   assert.equal(game.add("c", "secret-c"), null);
   assert.equal(JSON.stringify(game.snapshot()).includes("secret-a"), false);

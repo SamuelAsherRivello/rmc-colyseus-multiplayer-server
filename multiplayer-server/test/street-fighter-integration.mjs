@@ -33,6 +33,7 @@ test("private two-player duel synchronizes, enforces capacity, and restores the 
     const b = await join({ code });
     assert.equal(a.state.roomId, b.state.roomId);
     await until(() => a.state.gameState?.players?.length === 2 && b.state.gameState?.players?.length === 2, "both seats synchronize");
+    assert.equal(a.state.gameState.stage, b.state.gameState.stage, "both fighters load the same room stage");
 
     a.send("select", { fighter: "kaida" }); b.send("select", { fighter: "chunLi" });
     await until(() => a.state.gameState.players[0].fighter === "kaida" && a.state.gameState.players[1].fighter === "chunLi", "fighter selection sync");

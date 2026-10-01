@@ -6,7 +6,7 @@ export const FIXED_STEP = 1 / 60;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 function fighterState(id, x, facing) {
-  return { id, x, y: STAGE.floor, vx: 0, vy: 0, health: 100, rounds: 0, facing, crouching: false, airborne: false, stun: 0, blockStun: 0, attack: null, attackTick: 0, attackSpent: false, hitFlash: 0, guarding: false, inputHistory: [], lastInput: {} };
+  return { id, x, y: STAGE.floor, vx: 0, vy: 0, health: 100, rounds: 0, facing, crouching: false, airborne: false, stun: 0, blockStun: 0, attack: null, projectile: null, attackTick: 0, attackSpent: false, hitFlash: 0, guarding: false, inputHistory: [], lastInput: {}, lastDirection: "·" };
 }
 
 export function createMatch({ fighters = ["ryu", "chunLi"], roundSeconds = ROUND_SECONDS } = {}) {
@@ -21,6 +21,7 @@ export function startMatch(match) {
 function beginAttack(player, type, definition) {
   const kickMoves = ["lightKick", "mediumKick", "heavyKick", "tatsumaki", "hyakuretsu", "spinningBird", "lightningStep", "cometHeel"];
   player.attack = { type, pose: kickMoves.includes(type) ? "kick" : "punch", ...definition }; player.attackTick = 0; player.attackSpent = false; player.attackHits = 0;
+  if (definition.projectile) player.projectile = { x: player.x + player.facing * 42, y: player.y - 62, vx: player.facing * 820, startup: definition.startup, attack: { ...definition, type }, owner: player.id };
   if (definition.airborne && !player.airborne) { player.vy = -430; player.airborne = true; }
   if (definition.advancing) player.vx = player.facing * 235;
 }
@@ -65,8 +66,14 @@ export function stepMatch(match, inputs = [{}, {}], dt = FIXED_STEP) {
 
   for (let i = 0; i < 2; i++) {
     const p = match.players[i], enemy = match.players[1 - i], input = inputs[i] ?? {};
+    const previousInput = p.lastInput;
+    const direction = inputDirection(input, p.facing);
+    const directionChanged = direction !== p.lastDirection;
+    const punchPressed = Boolean(input.punch) && !Boolean(previousInput.punch);
+    const kickPressed = Boolean(input.kick) && !Boolean(previousInput.kick);
+    if (directionChanged || punchPressed || kickPressed) p.inputHistory.push({ direction: directionChanged ? direction : "·", punch: punchPressed, kick: kickPressed, time: match.elapsed });
     p.lastInput = input;
-    p.inputHistory.push({ direction: inputDirection(input, p.facing), punch: Boolean(input.punch), kick: Boolean(input.kick), time: match.elapsed });
+    p.lastDirection = direction;
     if (p.inputHistory.length > 12) p.inputHistory.shift();
     p.guarding = Boolean(input.away && !p.airborne);
     p.crouching = Boolean(input.down && !p.airborne);
@@ -83,7 +90,7 @@ export function stepMatch(match, inputs = [{}, {}], dt = FIXED_STEP) {
       const attack = p.attack; p.attackTick++;
       const hitLimit = attack.hits ?? 1;
       const multiHitReady = p.attackHits < hitLimit && (p.attackHits === 0 || p.attackTick >= attack.startup + Math.floor(attack.active * p.attackHits / hitLimit));
-      if (!p.attackSpent && multiHitReady && p.attackTick >= attack.startup && p.attackTick < attack.startup + attack.active) {
+      if (!attack.projectile && !p.attackSpent && multiHitReady && p.attackTick >= attack.startup && p.attackTick < attack.startup + attack.active) {
         const distance = (enemy.x - p.x) * p.facing;
         const inReach = distance >= -20 && distance <= attack.reach;
         const airtime = STAGE.floor - enemy.y;
@@ -100,6 +107,23 @@ export function stepMatch(match, inputs = [{}, {}], dt = FIXED_STEP) {
     if (p.airborne) { p.vy += 1120 * frame; p.y += p.vy * frame; if (p.y >= STAGE.floor) { p.y = STAGE.floor; p.vy = 0; p.airborne = false; } }
     p.x = clamp(p.x + p.vx * frame, STAGE.minX, STAGE.maxX);
     p.vx *= p.stun > 0 || p.blockStun > 0 ? 0.9 : 0.75;
+  }
+
+  for (const attacker of match.players) {
+    const projectile = attacker.projectile;
+    if (!projectile) continue;
+    const defender = match.players.find((player) => player !== attacker);
+    if (projectile.startup > 0) { projectile.startup--; continue; }
+    const previousX = projectile.x;
+    projectile.x += projectile.vx * frame;
+    const crossed = projectile.vx > 0
+      ? previousX <= defender.x + STAGE.fighterWidth / 2 && projectile.x >= defender.x - STAGE.fighterWidth / 2
+      : previousX >= defender.x - STAGE.fighterWidth / 2 && projectile.x <= defender.x + STAGE.fighterWidth / 2;
+    const verticalOk = projectile.attack.height === "high" ? !defender.crouching && (!defender.airborne || STAGE.floor - defender.y <= 120) : true;
+    if (crossed && verticalOk) {
+      pendingHits.push({ attacker, defender, attack: projectile.attack });
+      attacker.projectile = null;
+    } else if (projectile.x < 0 || projectile.x > STAGE.width) attacker.projectile = null;
   }
 
   for (const { attacker, defender, attack } of pendingHits) {

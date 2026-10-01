@@ -5,6 +5,7 @@ export { createMatch, getMoveList, resetRound, startMatch, stepMatch };
 export { ATTACKS, FIGHTERS, SPECIALS };
 
 export const STREET_FIGHTER_KEYS = Object.freeze(Object.keys(FIGHTERS));
+const STAGES = Object.freeze(["dojo", "harbor", "snow"]);
 const NEUTRAL = Object.freeze({ away: false, toward: false, up: false, down: false, jump: false, punch: false, kick: false });
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 
@@ -22,6 +23,7 @@ export class StreetFighterSimulation {
     this.seats = [];
     this.sessionSeats = new Map();
     this.phase = "lobby";
+    this.stage = "dojo";
     this.resumePhase = "fight";
     this.countdown = 0;
     this.reconnectRemaining = 0;
@@ -33,6 +35,11 @@ export class StreetFighterSimulation {
   }
 
   announce(text) { this.event = text; this.eventSerial++; }
+
+  setStageFromCode(code) {
+    const hash = [...String(code)].reduce((value, character) => (value * 31 + character.charCodeAt(0)) >>> 0, 7);
+    this.stage = STAGES[hash % STAGES.length];
+  }
 
   add(sessionId, token) {
     if (this.sessionSeats.has(sessionId) || this.seats.length >= 2 || !token) return null;
@@ -126,11 +133,11 @@ export class StreetFighterSimulation {
 
   snapshot() {
     return {
-      phase: this.phase, countdown: Math.max(0, this.countdown), reconnectRemaining: Math.max(0, this.reconnectRemaining),
+      phase: this.phase, stage: this.stage, countdown: Math.max(0, this.countdown), reconnectRemaining: Math.max(0, this.reconnectRemaining),
       roundResetIn: Math.max(0, this.roundResetIn), round: this.match.round, time: this.match.time,
       wins: [...this.match.wins], winner: this.match.winner,
       players: this.seats.map(({ sessionId, number, fighter, ready, connected }) => ({ id: sessionId, number, fighter, ready, connected })),
-      fighters: this.match.players.map(({ inputHistory, lastInput, ...player }) => ({ ...player, inputHistory: undefined, lastInput: undefined })),
+      fighters: this.match.players.map(({ inputHistory, lastInput, lastDirection, ...player }) => ({ ...player, inputHistory: undefined, lastInput: undefined })),
       event: { serial: this.eventSerial, text: this.event },
     };
   }
