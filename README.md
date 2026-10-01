@@ -15,6 +15,7 @@ This repository provides the shared multiplayer service and has no standalone de
 - [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
 - [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — draw together from separate computers or browser tabs.
 - [**Sumo Battle**](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) — push opponents out of the ring in an online sumo arena.
+- [**Street Fighter II Clone**](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/) — challenge a friend to an authoritative two-player arcade duel. (In development.)
 
 Whenever a new game updates this server, add or update its demo bullet here and its entry in the supported game registry, keeping the demo list in alphabetical order by game name.
 
@@ -92,6 +93,7 @@ Run commands from the repository root. Root TypeScript and Vercel configuration 
 | Shared client | `MultiplayerClient` exposes status, session ID, room ID, players, occupancy, retry, game messages, and subscription/teardown. |
 | Admission and capacity | One room per game within the running instance; capacity 12 for drawing; full status with explicit retry and no normal overflow room. Direct drawing matchmaking is blocked. |
 | Fresh reconnect | Exponential backoff, capped at 15 seconds; SDK identity restoration disabled. No persistent-user identity. |
+| Private Street Fighter duels | Two seat invite rooms, per-seat reconnect tokens, authoritative 60 Hz combat, and 15-second recovery; rooms and invites are in-memory and can end on process loss. |
 | Drawing relay | Normalized strokes/cursors, active-stroke snapshots for late joiners, whole-stroke ownership enforcement, departure cleanup. |
 
 **Future feature: `persistent-user-rejoins`.** Not implemented. Every reconnect and refresh creates a fresh user, and previous artwork is removed.

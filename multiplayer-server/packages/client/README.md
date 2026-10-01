@@ -1,5 +1,13 @@
 # RMC Multiplayer Client
 
+## Street Fighter II Clone (0.8.0)
+
+Create `new MultiplayerClient(endpoint, "street-fighter-ii", { create: true })` to host a private duel, or pass `{ code: "ABC123" }` to join. The creator receives a six-character `state.code`; share that code or the page URL with `?room=ABC123`. Capacity is exactly two. The server returns each seat a private reconnect token and the shared client retries it automatically for 15 seconds. A successful reconnect keeps the same fighter seat and match state. Tokens and rooms live in memory; a process restart, serverless instance split, or expired window ends the invite.
+
+Send `select` with `{ fighter: "ryu" | "chunLi" | "kaida" }` and `ready` with `{ ready: boolean }` in the lobby. The fight starts after both seats are connected and ready. `gameState` includes `phase`, `countdown`, `reconnectRemaining`, `round`, `time`, `wins`, `winner`, `players`, `fighters`, and `event`. Each fighter snapshot exposes authoritative position, facing, health, current attack, stun, block and animation fields. The server simulates combat at 60 Hz and publishes full snapshots at 20 Hz. Send `input` at up to 20 Hz with a strictly increasing nonnegative safe integer `seq`, booleans `away`, `toward`, `up`, `down`, `jump`, and `punch`/`kick` as `false`, `light`, `medium`, or `heavy`. Inputs expire after 300 ms. Client positions, health, and results are never accepted. `rematch` with `{ ready: true }` restarts the best-of-three when both players agree. Local pause should send neutral input; it does not pause the shared duel.
+
+The shared combat rules and fighter data are also importable from `@rmc/multiplayer-client/street-fighter` for displays and offline tools; only server snapshots are authoritative online. Existing game keys and the two-argument `MultiplayerClient` API remain compatible.
+
 ## Dust Circuit Rally (0.7.0)
 
 Use `new MultiplayerClient(endpoint, 'dust-circuit-rally')`. Read `state.gameState`: `phase`, `round`, `time`, `raceTime`, `remaining`, `countdown`, `people`, `trucks`, `pickups`, `ranking` and `event`.
