@@ -8,6 +8,7 @@ Rivello Multimedia Consulting (RMC), led by [Samuel Asher Rivello](https://www.s
 
 This repository provides the shared multiplayer service and has no standalone demo. Play the projects that use it:
 
+- [**Bomberman Clone**](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/) — private competitive bomb arena; multiplayer integration in development.
 - [**Dust Circuit Rally**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race four off-road trucks in a fixed-camera landscape circuit with solo, local and online modes.
 - [**Enter the Gungeon Clone**](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) — survive bullet waves together in private 1–4-player rooms with dodge rolls, upgrades and revives.
 - [**Garden Chat**](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) — wander a shared garden and chat with other visitors.
@@ -160,3 +161,4 @@ Deployment explicitly assigns the canonical public alias after a tagged checkout
 ## Enter the Gungeon Clone
 
 [Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) � [Source](https://github.com/SamuelAsherRivello/babylon-lite-enter-the-gungeon-clone). `gungeon` adds private six-character rooms for 1�4 players, readiness, authoritative arena movement/combat, dodge invulnerability, three weapon patterns, shared upgrade rewards, revival and wave/boss progression. Existing shared-client callers remain compatible; optional admission options support create/join. Two-client integration and deterministic rule tests are included in local and live deployment checks. Fresh reconnect and in-memory hosting limits above apply.
+

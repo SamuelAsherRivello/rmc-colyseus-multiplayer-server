@@ -15,3 +15,8 @@ All packages are @rmc/multiplayer-client. Before changing a shared protocol, rev
 ## Enter the Gungeon Clone
 
 `gungeon` � 1�4 players per private room code � shared client 0.7.0+ � [Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) � [Source](https://github.com/SamuelAsherRivello/babylon-lite-enter-the-gungeon-clone). Server-authoritative wave arena, three weapons, upgrades, dodge, revive, coded rooms and hot join/drop. See the client contract for admission options.
+
+## Bomberman Clone
+
+bomberman — 2–4 players, private codes, authoritative bomb arena, 15-second identity recovery. Shared client 0.9.0 target. [Demo in development](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/).
+

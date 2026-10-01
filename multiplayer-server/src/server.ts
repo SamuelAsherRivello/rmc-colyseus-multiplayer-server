@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { Room, Server, ServerError, matchMaker, type Client } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
+import { BombermanRoom } from './bomberman-room.js';
 import { GungeonRoom } from "./gungeon-room.js";
 import { DrawingRoom } from "./drawing-room.js";
 import { SumoRoom } from "./sumo-room.js";
@@ -19,19 +20,19 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
-const games = new Map<string, typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom>([["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom], ["gauntlet-3d", GauntletRoom], ["dust-circuit-rally", RacingRoom], ["neon-breaker-duo", NeonBreakerRoom]]);
+const games = new Map<string, typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom>([["bomberman", BombermanRoom], ["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom], ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom], ["gauntlet-3d", GauntletRoom], ["dust-circuit-rally", RacingRoom], ["neon-breaker-duo", NeonBreakerRoom]]);
 let joining: Promise<unknown> = Promise.resolve();
 class FullRoomError extends Error {}
 class AdmissionError extends Error { constructor(public status:number,message:string){super(message);} }
-async function reserveDungeon(body:unknown) {
+async function reserveDungeon(body:unknown, game = 'gungeon') {
   const data=body as {create?:boolean;code?:string};
   if(!data||typeof data!=='object')throw new AdmissionError(400,'Choose create or a room code');
   const pending=joining.catch(()=>undefined).then(async()=>{
-    const rooms=await matchMaker.query({name:'gungeon'});
+    const rooms=await matchMaker.query({name:game});
     if(data.create===true){
       if(rooms.length>=50)throw new AdmissionError(503,'Too many rooms - try again later');
       let code='';do {code=randomUUID().replace(/-/g,'').slice(0,6).toUpperCase();}while(rooms.some(r=>r.metadata?.code===code));
-      const room=await matchMaker.createRoom('gungeon',{code});
+      const room=await matchMaker.createRoom(game,{code});
       return {reservation:await matchMaker.joinById(room.roomId),code};
     }
     if(typeof data.code!=='string'||!/^[A-Z0-9]{6}$/.test(data.code))throw new AdmissionError(400,'Enter a six-character room code');
@@ -76,7 +77,7 @@ const gameServer = new Server({
     app.get("/api/health", (_req, res) => res.json({ status: "ok", version: metadata.version, instance, games: [...games.keys()] }));
     app.post("/api/join/:game", async (req, res) => {
       if (!games.has(req.params.game)) { res.status(404).json({ error: "Unknown game" }); return; }
-      try { res.json(req.params.game === "gungeon" ? await reserveDungeon(req.body) : await reserve(req.params.game)); }
+      try { res.json(["gungeon", "bomberman"].includes(req.params.game) ? await reserveDungeon(req.body, req.params.game) : await reserve(req.params.game)); }
       catch (error) {
         if (error instanceof AdmissionError) res.status(error.status).json({ error: error.message });
         else if (error instanceof FullRoomError) res.status(409).json({ error: "Room full" });
@@ -94,3 +95,5 @@ gameServer.define("feasibility", ProbeRoom);
 const server = await gameServer.serverless();
 if (!process.env.VERCEL) server.listen(Number(process.env.PORT) || 2567, "0.0.0.0");
 export default server;
+
+

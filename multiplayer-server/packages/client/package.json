@@ -6,13 +6,15 @@
   "exports": {
     ".": "./index.js",
     "./racing": "./racing-simulation.js",
-    "./racing-track": "./racing-track.js"
+    "./racing-track": "./racing-track.js",
+    "./bomberman": "./bomberman-rules.js"
   },
   "files": [
     "index.js",
     "README.md",
     "racing-simulation.js",
-    "racing-track.js"
+    "racing-track.js",
+    "bomberman-rules.js"
   ],
   "dependencies": {
     "@colyseus/sdk": "0.17.43"
