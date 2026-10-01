@@ -14,6 +14,7 @@ This repository provides the shared multiplayer service and has no standalone de
 - [**Gauntlet Clone 2D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) — cooperate to battle monsters, revive allies, and escape a tile-based dungeon.
 - [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
 - [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — draw together from separate computers or browser tabs.
+- [**Neon Breaker Duo**](https://samuelasherrivello.github.io/babylon-lite-arkanoid-clone/) — co-operate to clear a neon brick field together. (In development)
 - [**Sumo Battle**](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) — push opponents out of the ring in an online sumo arena.
 
 Whenever a new game updates this server, add or update its demo bullet here and its entry in the supported game registry, keeping the demo list in alphabetical order by game name.
