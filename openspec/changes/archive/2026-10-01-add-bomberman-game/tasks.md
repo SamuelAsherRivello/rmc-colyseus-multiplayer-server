@@ -7,6 +7,6 @@
 - [x] 1.4 Preserve all games and document new consumer/API; typecheck and all 36 regressions pass after concurrent Neon Breaker rebase.
 
 ## 2. Release and public verification
-- [ ] 2.1 Push scoped commits and release v0.9.0 through existing workflow; verify tagged client artifact and backend deployment.
-- [ ] 2.2 Verify public Bomberman actions and existing-games regressions; require live workflow checks and matching health version before acceptance.
+- [x] 2.1 Push scoped commits and release v0.9.2 through existing workflow; verify tagged client artifact and backend deployment. Run 36860119994 passed release, canonical version and every registered game's live checks.
+- [x] 2.2 Verify public Bomberman actions and existing-games regressions; require live workflow checks and matching health version before acceptance. Two WebGPU browsers passed readiness, movement with ordered 180–240ms jitter, bomb outcome and identity recovery; later v0.9.3 preserves Bomberman sources and passed the same consumer check.
 
