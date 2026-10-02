@@ -15,6 +15,10 @@ This is a quota projection from the current source cadence, not a live Upstash u
 
 Current local verification on 2026-10-02: `npm run typecheck` passed and `npm test` passed all 74 tests against the process-local implementation. This confirms the current games still pass their local suites; it does not satisfy OpenSpec tasks 4.1 or 4.2 because the shared-state/Vercel migration has not been implemented and the public endpoint remains on the incompatible v0.9.7 release.
 
+### Alternative free relay candidate: Supabase Realtime
+
+Supabase Free currently lists 2 million Realtime messages/month, 100 messages/second, 200 peak connections, and 5 GB egress; free projects pause after one week of inactivity ([pricing](https://supabase.com/pricing), [Realtime limits](https://supabase.com/docs/guides/realtime/limits)). Broadcast usage counts one message sent plus one per receiving subscriber ([message accounting](https://supabase.com/docs/guides/platform/manage-your-usage/realtime-messages)). For a two-seat room split across two Vercel instances, relaying one remote player's 20 Hz input and the owner's 20 Hz snapshot to the other instance is approximately 80 counted messages/second (two per broadcast), or 288,000 messages per active room-hour. The Free monthly message quota would therefore cover at most 6.94 aggregate room-hours at 20 Hz; at 10 Hz the estimate is 13.89 hours, below the 100-message/second limit. These are architecture-based projections, not measurements. This candidate has not been provisioned or tested, and no Supabase credentials are configured in the server repository or its GitHub Actions secrets; it is not yet a viable deployment path without project access and cross-instance tests.
+
 Deployment dpl_CQGsysdik4aLRxSh67ETibeSkw9L at https://rmc-colyseus-multiplayer-server.vercel.app.
 
 - TypeScript check: pass.
