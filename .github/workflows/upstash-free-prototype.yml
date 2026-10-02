@@ -1,0 +1,16 @@
+name: Probe free Upstash room state
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prototype:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test atomic invites, 20 Hz room state, and reconnect recovery
+        run: node scripts/probe-upstash-free.mjs --create-scratch
