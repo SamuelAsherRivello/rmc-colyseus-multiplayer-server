@@ -54,6 +54,9 @@ test('Neon Breaker synchronizes actions, admits two, snapshots late joins, frees
 
     assert.equal(a.state.gameState.lives, 3);
     assert.deepEqual(a.state.gameState.paddles.map(({ y }) => y), [490, 440]);
+    const initialServerTime = a.state.gameState.serverTime;
+    assert.ok(Number.isFinite(initialServerTime), 'snapshots include the authoritative server clock');
+    await until(() => a.state.gameState.serverTime > initialServerTime, 'server clock advances with game snapshots');
     a.send('input', { x: .98 });
     await until(() => a.state.gameState.paddles[seatA].x > 280, 'full-width input sync');
     assert.ok(a.state.gameState.paddles[seatA].x <= 301);
