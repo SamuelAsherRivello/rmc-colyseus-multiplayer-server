@@ -32,6 +32,12 @@ export class BombermanSimulation {
     this.inputs.delete(oldId);this.received.delete(oldId);this.brains.delete(oldId);
     this.players.delete(oldId);this.players.set(next.id,next);
   }
+  replaceDisconnectedId(oldId, newId) {
+    const player = this.players.get(oldId);
+    if (!player || player.cpu || player.connected || this.players.has(newId)) return false;
+    this.transfer(oldId, { ...player, id: newId, connected: true, ready: false, ack: -1 });
+    return true;
+  }
   add(id) {
     if(this.players.has(id))return false;
     const seat=[...this.players.values()].filter(p=>p.cpu).sort((a,b)=>a.number-b.number)[0];

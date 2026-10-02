@@ -20,7 +20,7 @@ jobs:
       - run: npm ci
       - run: node scripts/drawing-cross-host.mjs
         env:
-          SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
+          SERVER_URL: ${{ vars.RENDER_SERVICE_URL }}
           PROBE_RUN: ${{ inputs.run_id }}
           PROBE_HOST: github-runner
           PROBE_SECONDS: '75'

@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { MultiplayerClient } from '../packages/client/index.js';
 
-const endpoint = process.env.SERVER_URL || 'http://127.0.0.1:2687';
+const endpoint = process.env.SERVER_URL || 'http://127.0.0.1:2688';
 const clients = [];
 async function until(fn, message, timeout = 15000) {
   const deadline = Date.now() + timeout;
@@ -23,7 +23,7 @@ async function connect(game = 'ring-rivals', options = {}) {
 async function startServer() {
   if (process.env.SERVER_URL) return null;
   const server = spawn(process.execPath, ['--import', 'tsx', 'server.ts'], {
-    env: { ...process.env, PORT: '2687' }, stdio: 'ignore', windowsHide: true,
+    env: { ...process.env, PORT: '2688' }, stdio: 'ignore', windowsHide: true,
   });
   let ready = false;
   for (let i = 0; i < 100; i++) {
@@ -42,7 +42,7 @@ test('Ring Rivals private room synchronizes the bout, enforces capacity, isolate
     const health = await (await fetch(`${endpoint}/api/health`)).json();
     assert.ok(health.games.includes('ring-rivals'));
     const a = await connect('ring-rivals', { create: true });
-    assert.match(a.state.code, /^[A-Z0-9]{6}$/);
+    assert.match(a.state.code, /^[A-Z0-9]{4}$/);
     const b = await connect('ring-rivals', { code: a.state.code });
     assert.equal(a.state.roomId, b.state.roomId);
     const invalid = await connect('ring-rivals', { code: 'NOTREAL' });
@@ -87,7 +87,8 @@ test('Ring Rivals awards a forfeit after the 15-second recovery window expires',
     a.stopped = true;
     a.room.reconnection.enabled = false;
     a.room.connection.close();
-    await until(() => b.state.gameState?.phase === 'matchover' && b.state.gameState?.winner === 1, 'forfeit not awarded after recovery expiry', 22000);
+    try { await until(() => b.state.gameState?.phase === 'matchover' && b.state.gameState?.winner === 1, 'forfeit not awarded after recovery expiry', 22000); }
+    catch (error) { throw new Error(`${error.message}; snapshot=${JSON.stringify(b.state.gameState)}; players=${JSON.stringify(b.state.players)}`); }
     assert.notEqual(disconnectedSeat, b.state.sessionId);
   } finally {
     clients.splice(0).forEach(client => client.disconnect());

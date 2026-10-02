@@ -6,7 +6,7 @@ Ring Rivals needs an isolated authoritative online boxing room with private invi
 
 ## What Changes
 
-- Register a `ring-rivals` private room with six-character codes and capacity two.
+- Register a `ring-rivals` private room with four-character codes and capacity two.
 - Add server-authoritative boxing state, bounded action input, 60-second rounds, score, knockouts, draw rules, and room-isolated snapshots.
 - Enable same-session SDK reconnect for this room with a 15-second grace period and paused round timer.
 - Publish the shared-client package and backend release, update registry/API docs and deployment/live integration coverage.

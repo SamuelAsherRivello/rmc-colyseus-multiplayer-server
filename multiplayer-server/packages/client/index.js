@@ -1,11 +1,35 @@
 import { Client } from "@colyseus/sdk";
 
+const ROOM_CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+/** Generate an editable four-character suggestion. The server remains authoritative. */
+export function suggestRoomCode() {
+  const bytes = new Uint8Array(4);
+  if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(bytes);
+  else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  return [...bytes].map(value => ROOM_CODE_ALPHABET[value % ROOM_CODE_ALPHABET.length]).join("");
+}
+
+export function readRoomCode(search = globalThis.location?.search ?? "") {
+  const value = new URLSearchParams(search).get("room");
+  return value?.trim().toUpperCase() ?? "";
+}
+
+export function buildRoomLink(code, url = globalThis.location?.href) {
+  if (!url) throw new Error("A page URL is required to build a room link");
+  const link = new URL(url);
+  link.searchParams.set("room", String(code).trim().toUpperCase());
+  return link.toString();
+}
+
 /** Shared anonymous session lifecycle. Each successful join creates a fresh identity. */
 export class MultiplayerClient {
   constructor(endpoint, game = "multiplayer-draw", options = {}) {
     this.endpoint = endpoint.replace(/\/$/, "");
     this.game = game;
     this.options = { ...options };
+    const linkedCode = readRoomCode();
+    if (linkedCode && !options.code && options.create !== true) this.options = { ...this.options, code: linkedCode, create: false };
     this.listeners = new Set();
     this.state = { status: "idle", players: [], strokes: new Map(), gameState: null, chats: [], capacity: 12, sessionId: null, seat: null, error: "" };
     this.stopped = true;
@@ -29,7 +53,8 @@ export class MultiplayerClient {
       const reservation = payload.reservation || payload;
       if (!response.ok) {
         const error = new Error(reservation.error || "Server unavailable");
-        error.full = response.status === 409;
+        error.codeInUse = reservation.errorCode === "code_in_use";
+        error.full = response.status === 409 && !error.codeInUse;
         error.expired = response.status === 404 || response.status === 400;
         throw error;
       }
@@ -109,7 +134,7 @@ export class MultiplayerClient {
     } catch (error) {
       if (room) { room.reconnection.enabled = false; void room.leave(); }
       if (generation !== this.generation || this.stopped) return;
-      if (error.expired) { this.state.status = "error"; this.state.error = error.message; this.emit("status"); } else if (error.full) {
+      if (error.expired || error.codeInUse) { this.state.status = "error"; this.state.error = error.message; this.emit("status"); } else if (error.full) {
         this.state.status = "full";
         this.state.error = "This room is full. Try again when someone leaves.";
         this.emit("status");

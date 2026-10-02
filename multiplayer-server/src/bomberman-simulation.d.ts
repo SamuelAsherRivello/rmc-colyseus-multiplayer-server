@@ -6,6 +6,7 @@ export class BombermanSimulation {
   phase:string;
   clock:number;
   add(id:string):boolean;
+  replaceDisconnectedId(oldId:string,newId:string):boolean;
   remove(id:string):void;
   connected(id:string,value:boolean):void;
   ready(id:string):void;

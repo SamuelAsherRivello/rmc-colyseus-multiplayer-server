@@ -3,7 +3,7 @@
 ## 1. Ring Rivals room
 
 - [x] 1.1 Implement deterministic boxing rules and focused unit tests for attacks, defense, stamina, knockouts, timer decisions, tied-round draws, best-of-three, and disconnect pause/forfeit.
-- [x] 1.2 Add isolated two-seat private room with six-character admission, validated/rate-limited inputs, snapshots, and same-session 15-second recovery; verify two-client sync, room-code rejection, capacity, isolation, reconnect, and expiry.
+- [x] 1.2 Add isolated two-seat private room with four-character admission, validated/rate-limited inputs, snapshots, and same-session 15-second recovery; verify two-client sync, room-code rejection, capacity, isolation, reconnect, and expiry.
 - [x] 1.3 Add the client opt-in for SDK reconnection and verify Ring Rivals preserves session ID while existing non-Bomberman clients retain fresh-identity behavior.
 
 ## 2. Release preparation

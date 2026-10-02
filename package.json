@@ -11,6 +11,7 @@
     "dev": "tsx server.ts",
     "typecheck": "tsc --noEmit",
     "probe": "node scripts/probe.mjs",
+    "verify:long-session": "node scripts/long-lived-session.mjs",
     "test": "node --import tsx --test --test-concurrency=1 multiplayer-server/test/*.mjs"
   },
   "dependencies": {

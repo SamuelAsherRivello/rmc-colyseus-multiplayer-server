@@ -25,7 +25,7 @@ jobs:
       - run: npm run typecheck
       - run: node scripts/cross-host.mjs
         env:
-          SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
+          SERVER_URL: ${{ vars.RENDER_SERVICE_URL }}
           PROBE_HOST: github-runner
           PROBE_RUN: ${{ inputs.run_id }}
           PROBE_SECONDS: ${{ inputs.seconds }}

@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { MultiplayerClient } from '../packages/client/index.js';
-const endpoint=process.env.SERVER_URL||'http://127.0.0.1:2681',clients=[];
+const endpoint=process.env.SERVER_URL||'http://127.0.0.1:2682',clients=[];
 async function until(fn,label,ms=20000){const end=Date.now()+ms;while(!fn()){if(Date.now()>end)throw Error(label);await delay(40);}}
 async function join(game='gauntlet-2d'){const c=new MultiplayerClient(endpoint,game);clients.push(c);void c.connect();await until(()=>['connected','full'].includes(c.state.status),'join '+c.state.error);return c;}
 test('gauntlet-2d sync, duplicate classes, late join, capacity, isolation and fresh reconnect',{timeout:90000},async()=>{
  let server;try{
-  if(!process.env.SERVER_URL){server=spawn(process.execPath,['--import','tsx','server.ts'],{env:{...process.env,PORT:'2681'},stdio:'ignore',windowsHide:true});let ready=false;for(let i=0;i<100;i++){try{ready=(await fetch(endpoint+'/api/health')).ok;}catch{}if(ready)break;await delay(100);}assert.ok(ready);}
+  if(!process.env.SERVER_URL){server=spawn(process.execPath,['--import','tsx','server.ts'],{env:{...process.env,PORT:'2682'},stdio:'ignore',windowsHide:true});let ready=false;for(let i=0;i<100;i++){try{ready=(await fetch(endpoint+'/api/health')).ok;}catch{}if(ready)break;await delay(100);}assert.ok(ready);}
   const a=await join(),b=await join();assert.equal(a.state.roomId,b.state.roomId);
   a.send('select','wizard');b.send('select','wizard');await until(()=>b.state.gameState.players.filter(p=>p.hero==='wizard').length===2,'switch sync');
   assert.equal(new Set(b.state.gameState.players.map(p=>p.color)).size,2);

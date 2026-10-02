@@ -1,14 +1,23 @@
-const required = ["VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID"];
-for (const key of required) {
-  if (!process.env[key]) throw new Error(`${key} is missing from GitHub Actions secrets`);
+const hookValue = process.env.RENDER_DEPLOY_HOOK_URL;
+const serviceValue = process.env.RENDER_SERVICE_URL;
+if (!hookValue) throw new Error("RENDER_DEPLOY_HOOK_URL is missing from GitHub Actions secrets");
+if (!serviceValue) throw new Error("RENDER_SERVICE_URL is missing from GitHub Actions variables");
+
+const hook = new URL(hookValue);
+const service = new URL(serviceValue);
+if (hook.protocol !== "https:" || service.protocol !== "https:") {
+  throw new Error("Render deploy hook and service URL must use HTTPS");
 }
-const url = new URL(`https://api.vercel.com/v9/projects/${encodeURIComponent(process.env.VERCEL_PROJECT_ID)}`);
-url.searchParams.set("teamId", process.env.VERCEL_ORG_ID);
-const response = await fetch(url, {
-  headers: { Authorization: `Bearer ${process.env.VERCEL_TOKEN}` },
-  signal: AbortSignal.timeout(15000),
-});
-if (!response.ok) {
-  throw new Error(`Vercel project authorization failed (HTTP ${response.status}). Replace VERCEL_TOKEN with a generated access token scoped to this project's team. Credentials are never printed.`);
+
+let response;
+try {
+  response = await fetch(new URL("/api/health", service), { signal: AbortSignal.timeout(15000) });
+} catch (error) {
+  throw new Error(`Render service health check failed: ${error.message}`);
 }
-console.log("Vercel project access verified.");
+if (!response.ok) throw new Error(`Render service health check failed (HTTP ${response.status})`);
+const health = await response.json();
+if (health.status !== "ok" || typeof health.version !== "string") {
+  throw new Error("Render service returned invalid health metadata");
+}
+console.log(`Render service is healthy at version ${health.version}.`);

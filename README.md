@@ -46,17 +46,14 @@ npm test
 npm run dev
 ```
 
-Server port defaults to 2567; override `PORT`. Tests start their own server on 2678.
-Set `SERVER_URL` before 
-pm test` to run the same ownership, late-join, cleanup, fresh-reconnect, seat-reuse, 12/13-capacity checks against a live server. Live integration checks need an otherwise empty drawing session.
+Local Node execution defaults to port 2567; override `PORT`. The Render-compatible Docker image defaults to port 10000. Tests start their own server on 2678.
+Set `SERVER_URL` before `npm test` to run the same ownership, late-join, cleanup, fresh-reconnect, seat-reuse, and capacity checks against a live server. Live integration checks need an otherwise empty drawing session.
 
 ### 🛠 Release Version
 
-The root `package.json` is the version source. Run the **Release** workflow with a new semantic version. It tests, sets root/client versions, publishes a tagged GitHub Release with the client tarball, and explicitly calls **Deploy backend release**. This avoids relying on a bot-created release to trigger another workflow. A human-published GitHub Release also triggers deployment.
+The root `package.json` is the version source. Run the **Release** workflow with a new semantic version. It checks the configured Render service, tests, sets root/client versions, publishes a tagged GitHub Release with the client tarball, and calls **Deploy backend release**. Deployment verifies the selected source, triggers Render, checks the public health version, runs the full suite against the public endpoint, and keeps two WebSocket clients active for six minutes. To deploy manually, dispatch **Deploy backend release** with a tag that points to the current `main` commit.
 
-Deployment tests the tag, records the previous production deployment, deploys to Vercel, and runs live drawing checks. A failed post-deploy check attempts rollback and keeps the workflow failed. To restore a known tag manually, dispatch **Deploy backend release** with that tag.
-
-Required repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. All three secrets are configured and verified by a successful Actions deployment. For replacement credentials, create an access token in Vercel account settings and save its generated value directly to GitHub Secrets. Release checks project access before publishing. Never commit credentials.
+The checked-in `render.yaml` configures one always-on 0.5 CPU / 512 MB web service in Frankfurt with the health endpoint and a five-minute shutdown grace. Render currently lists this compute plan at $7/month. Provision the service from the Blueprint, then configure the repository `RENDER_DEPLOY_HOOK_URL` secret and `RENDER_SERVICE_URL` variable in GitHub Actions before releasing. The workflow never prints the deploy hook. Do not commit credentials.
 
 ## Project Details
 
@@ -70,11 +67,11 @@ multiplayer-server/
 └── documentation/       # Game registry and hosting evidence
 scripts/                 # Release tooling and hosting probes
 .github/workflows/       # Verification, release, and deployment
-server.ts                # Thin Vercel entry point
+server.ts                # Thin Node/Vercel entry point
 package.json             # Root npm commands and release version
 ```
 
-Run commands from the repository root. Root TypeScript and Vercel configuration use `server.ts` to load the project implementation.
+Run commands from the repository root. The Render container starts `server.ts` as a long-lived Node process. The thin Vercel adapter and its config remain available for the old endpoint during consumer migration.
 
 ### 📦 AI
 
@@ -89,16 +86,17 @@ Run commands from the repository root. Root TypeScript and Vercel configuration 
 
 ### Custom Shared Features
 
-| Feature | Available behavior |
-|---|---|
-| Hot join / hot drop | Automatic anonymous admission; remove departed presence and game-owned artwork after disconnect detection. |
-| Player identity | Lowest free ordered seat; fresh session ID, server-generated deterministic name/color; existing seats remain unchanged. Active colors are distinct. |
-| Shared client | `MultiplayerClient` exposes status, session ID, room ID, players, occupancy, retry, game messages, and subscription/teardown. |
-| Admission and capacity | One room per game within the running instance; capacity 12 for drawing; full status with explicit retry and no normal overflow room. Direct drawing matchmaking is blocked. |
-| Fresh reconnect | Exponential backoff, capped at 15 seconds, remains the default; SDK identity restoration is enabled only for Bomberman and Ring Rivals, whose rooms explicitly reserve seats. Street Fighter re-admits with its private seat token. No persistent-user identity. |
-| Bounded seat recovery | Bomberman and Ring Rivals can reserve a dropped player's seat for 15 seconds; the room-specific simulation stops input and handles expiry. |
-| Private Street Fighter duels | Two-seat invite rooms, per-seat reconnect tokens, authoritative 60 Hz combat, and 15-second recovery; rooms and invites are in-memory and can end on process loss. |
-| Drawing relay | Normalized strokes/cursors, active-stroke snapshots for late joiners, whole-stroke ownership enforcement, departure cleanup. |
+| # | Name | Comment |
+|---:|---|---|
+| 1 | Hot join / hot drop | Automatic anonymous admission; remove departed presence and game-owned artwork after disconnect detection. |
+| 2 | Player identity | Lowest free ordered seat; fresh session ID, server-generated deterministic name/color; existing seats remain unchanged. Active colors are distinct. |
+| 3 | Shared client | `MultiplayerClient` exposes status, session ID, room ID, players, occupancy, retry, game messages, and subscription/teardown. |
+| 4 | Admission and capacity | One room per game within the running instance; capacity 12 for drawing; full status with explicit retry and no normal overflow room. Direct drawing matchmaking is blocked. |
+| 5 | Fresh reconnect | Exponential retry remains capped at 15 seconds. Automatic SDK recovery keeps its session identity where supported; opening a coded room link creates a fresh identity and restores the vacant seat. |
+| 6 | Coded-room recovery | Automatic same-session recovery lasts 15 seconds; a room-code join can reclaim the disconnected seat with a fresh identity while any player remains in the room. |
+| 7 | Private Street Fighter duels | Two-seat invite rooms, per-seat reconnect tokens, authoritative 60 Hz combat, and 15-second recovery; rooms and invites are in-memory and can end on process loss. |
+| 8 | Drawing relay | Normalized strokes/cursors, active-stroke snapshots for late joiners, whole-stroke ownership enforcement, departure cleanup. |
+| 9 | Coded private rooms | Four-character editable room codes, create/join/share links, URL auto-join, room-code seat recovery while anyone remains connected, and a 15-second empty-room refresh grace. See [the workflow guide](multiplayer-server/packages/client/README.md#coded-private-room-workflow), [admission and seat replacement](multiplayer-server/src/server.ts#L39), and [room recovery lifecycle](multiplayer-server/src/private-code-room.ts#L14). |
 
 **Future feature: `persistent-user-rejoins`.** Not implemented. Every reconnect and refresh creates a fresh user, and previous artwork is removed.
 
@@ -106,8 +104,8 @@ New games should review this catalog and [the game registry](multiplayer-server/
 
 ### Shared Client API
 
-See [package documentation](multiplayer-server/packages/client/README.md). Build locally with 
-pm pack ./multiplayer-server/packages/client --pack-destination artifacts` after creating the artifacts directory.
+See [package documentation](multiplayer-server/packages/client/README.md). Build locally with
+`npm pack ./multiplayer-server/packages/client --pack-destination artifacts` after creating the artifacts directory.
 
 After release, install the exact asset URL:
 
@@ -115,17 +113,15 @@ After release, install the exact asset URL:
 npm install https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/releases/download/v0.1.0/rmc-multiplayer-client-0.1.0.tgz
 ```
 
-The v0.1.0 asset is published and consumed by Multiplayer Draw. Commit the consumer lockfile. The client needs only the public backend URL, never a Vercel token.
+The v0.1.0 asset is published and consumed by Multiplayer Draw. Commit the consumer lockfile. The client needs only the public backend URL, never a server deployment credential.
 
 HTTP: `GET /api/health`; `POST /api/join/multiplayer-draw` returns a Colyseus seat reservation or 409 when full. Unknown games return 404; transient admission failures return 503. WebSocket messages are documented in the package. Drawing is limited to 100 strokes and 10,000 points per player, 2,048 points per stroke, and 64 points per batch. Erase strokes to reclaim space.
 
 ### Hosting Limits
 
-This is an experimental portfolio service, not a production scaling guarantee. One Vercel deployment does not guarantee one running process; independent instances cannot share these in-memory rooms. Live tests passed with 12 connections, and two independent hosts passed an 11-minute relay test across two timeout/rejoin cycles. See the [recorded hosting evidence](multiplayer-server/documentation/feasibility.md).
+The Render Blueprint configures one authoritative process so the in-memory room index and matchmaking state stay together. Render does not impose a fixed WebSocket duration, but connections end when the instance is replaced, including during deploys or platform maintenance. The server does not restore room state after process loss. Players can use the room link to rejoin while the room still exists; a fresh process requires a new room. See [Render WebSocket behavior](https://render.com/docs/websocket) and the [recorded hosting evidence](multiplayer-server/documentation/feasibility.md).
 
-Vercel's function duration ends sessions around five minutes. Rejoining creates fresh identities and deletes previous artwork. Deployments can drop sessions, and old connections may briefly remain on an older deployment. There is no durable storage, account system, lobby UI, or paid dependency.
-
-The entry-point pattern follows [endel/colyseus-vercel](https://github.com/endel/colyseus-vercel). Runtime deployment needs explicit Express framework detection.
+There is no durable storage, account system, or separate lobby service. Keep the old Vercel endpoint running until every coded-room consumer has moved to the Render endpoint and passed its public checks.
 
 ## Credits
 
@@ -164,5 +160,5 @@ Deployment explicitly assigns the canonical public alias after a tagged checkout
 
 ## Enter the Gungeon Clone
 
-[Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) � [Source](https://github.com/SamuelAsherRivello/babylon-lite-enter-the-gungeon-clone). `gungeon` adds private six-character rooms for 1�4 players, readiness, authoritative arena movement/combat, dodge invulnerability, three weapon patterns, shared upgrade rewards, revival and wave/boss progression. Existing shared-client callers remain compatible; optional admission options support create/join. Two-client integration and deterministic rule tests are included in local and live deployment checks. Fresh reconnect and in-memory hosting limits above apply.
+[Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) — [Source](https://github.com/SamuelAsherRivello/babylon-lite-enter-the-gungeon-clone). `gungeon` adds private four-character rooms for 1–4 players, readiness, authoritative arena movement/combat, dodge invulnerability, three weapon patterns, shared upgrade rewards, revival and wave/boss progression. Existing shared-client callers remain compatible; optional admission options support create/join. Two-client integration and deterministic rule tests are included in local and live deployment checks. Fresh reconnect and in-memory hosting limits above apply.
 

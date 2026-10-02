@@ -5,7 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { once } from "node:events";
 import { MultiplayerClient } from "../packages/client/index.js";
 
-const endpoint = process.env.SERVER_URL || "http://127.0.0.1:2685";
+const endpoint = process.env.SERVER_URL || "http://127.0.0.1:2689";
 const clients = [];
 async function until(fn, label, timeout = 20000) {
   const end = Date.now() + timeout;
@@ -22,14 +22,14 @@ test("private two-player duel synchronizes, enforces capacity, and restores the 
   let server;
   try {
     if (!process.env.SERVER_URL) {
-      server = spawn(process.execPath, ["--import", "tsx", "server.ts"], { env: { ...process.env, PORT: "2685" }, stdio: "ignore", windowsHide: true });
+      server = spawn(process.execPath, ["--import", "tsx", "server.ts"], { env: { ...process.env, PORT: "2689" }, stdio: "ignore", windowsHide: true });
       let ready = false;
       for (let i = 0; i < 100; i++) { try { ready = (await fetch(endpoint + "/api/health")).ok; } catch {} if (ready) break; await delay(100); }
       assert.ok(ready, "local server starts");
     }
     const a = await join({ create: true });
     assert.equal(a.state.status, "connected");
-    const code = a.state.code; assert.match(code, /^[A-Z0-9]{6}$/);
+    const code = a.state.code; assert.match(code, /^[A-Z0-9]{4}$/);
     const b = await join({ code });
     assert.equal(a.state.roomId, b.state.roomId);
     await until(() => a.state.gameState?.players?.length === 2 && b.state.gameState?.players?.length === 2, "both seats synchronize");
@@ -66,7 +66,7 @@ test("private two-player duel synchronizes, enforces capacity, and restores the 
       await delay(250);
       server.kill();
       await Promise.race([once(server, "exit"), delay(3000)]);
-      server = spawn(process.execPath, ["--import", "tsx", "server.ts"], { env: { ...process.env, PORT: "2685" }, stdio: "ignore", windowsHide: true });
+      server = spawn(process.execPath, ["--import", "tsx", "server.ts"], { env: { ...process.env, PORT: "2689" }, stdio: "ignore", windowsHide: true });
       let ready = false;
       for (let i = 0; i < 100; i++) { try { ready = (await fetch(endpoint + "/api/health")).ok; } catch {} if (ready) break; await delay(100); }
       assert.ok(ready, "replacement process starts");

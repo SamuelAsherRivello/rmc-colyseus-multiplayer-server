@@ -1,8 +1,9 @@
-import { Room, type Client } from '@colyseus/core';
+import { CloseCode, type Client } from '@colyseus/core';
+import { PrivateCodeRoom } from './private-code-room.js';
 // @ts-expect-error The simulation is deliberately browser-safe plain JavaScript.
 import { RingRivalsSimulation } from './ring-rivals-simulation.js';
 
-export class RingRivalsRoom extends Room {
+export class RingRivalsRoom extends PrivateCodeRoom {
   maxClients = 2;
   simulation = new RingRivalsSimulation();
   seats = new Map<string, number>();
@@ -57,7 +58,18 @@ export class RingRivalsRoom extends Room {
     this.broadcast('presence', { players: this.players(), capacity: 2, code: this.metadata?.code });
   }
 
-  onJoin(client: Client) {
+  onJoin(client: Client, options: { roomCodeRejoinSessionId?: string }) {
+    this.privateCodeRoomJoined();
+    const replaced = this.consumeRoomCodeRejoin(options?.roomCodeRejoinSessionId);
+    const previousSeat = replaced ? this.seats.get(replaced) : undefined;
+    if (replaced && previousSeat !== undefined) {
+      this.seats.delete(replaced);
+      this.seats.set(client.sessionId, previousSeat);
+      this.simulation.connected(previousSeat, true);
+      this.broadcastState();
+      this.sendSnapshot(client);
+      return;
+    }
     const occupied = new Set(this.seats.values());
     const seat = occupied.has(0) ? 1 : 0;
     this.seats.set(client.sessionId, seat);
@@ -71,27 +83,39 @@ export class RingRivalsRoom extends Room {
     if (seat === undefined) return;
     this.simulation.connected(seat, false);
     this.broadcastState();
-    try {
-      await this.allowReconnection(client, 15);
-    } catch {
-      this.simulation.forfeit(seat);
-      this.broadcastState();
-    }
+    await this.waitForCodeRecovery(client, () => {
+      if (this.clients.length === 0) this.removePlayer(client.sessionId);
+      else { this.simulation.forfeit(seat); this.removePlayer(client.sessionId); }
+    });
   }
 
   onReconnect(client: Client) {
+    this.privateCodeRoomJoined();
+    this.clearRoomCodeRecovery(client.sessionId);
     const seat = this.seats.get(client.sessionId);
     if (seat !== undefined) this.simulation.connected(seat, true);
     this.sendSnapshot(client);
     this.broadcastState();
   }
 
-  onLeave(client: Client) {
+  onLeave(client: Client, code?: number) {
+    if (this.privateCodeRoomLeft(client)) return;
+    if (this.isRoomCodeRejoinPending(client.sessionId) || this.hasRoomCodeRecovery(client.sessionId)) return;
+    if (code === CloseCode.CONSENTED) { this.removePlayer(client.sessionId); return; }
     const seat = this.seats.get(client.sessionId);
-    if (seat !== undefined) this.simulation.leave(seat);
-    this.seats.delete(client.sessionId);
-    this.limits.delete(client.sessionId);
-    this.broadcast('departed', client.sessionId);
+    if (seat !== undefined) this.simulation.connected(seat, false);
+    this.reserveDisconnectedCodeSeat(client.sessionId, () => this.removePlayer(client.sessionId));
     this.broadcastState();
   }
+
+  private removePlayer(sessionId: string) {
+    const seat = this.seats.get(sessionId);
+    if (seat !== undefined) this.simulation.leave(seat);
+    this.seats.delete(sessionId);
+    this.limits.delete(sessionId);
+    this.broadcast('departed', sessionId);
+    this.broadcastState();
+  }
+
+  protected onRoomCodeRejoinCancelled(sessionId: string) { this.removePlayer(sessionId); }
 }

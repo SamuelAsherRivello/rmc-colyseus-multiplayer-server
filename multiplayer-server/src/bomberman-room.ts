@@ -1,6 +1,7 @@
-import { Room, type Client } from '@colyseus/core';
+import { CloseCode, type Client } from '@colyseus/core';
+import { PrivateCodeRoom } from './private-code-room.js';
 import { BombermanSimulation } from './bomberman-simulation.js';
-export class BombermanRoom extends Room {
+export class BombermanRoom extends PrivateCodeRoom {
   maxClients=4;
   simulation=new BombermanSimulation();
   limits=new Map<string,{time:number;count:number}>();
@@ -24,8 +25,19 @@ export class BombermanRoom extends Room {
   accept(client:Client){const now=Date.now();let limit=this.limits.get(client.sessionId);if(!limit||now-limit.time>=1000){limit={time:now,count:0};this.limits.set(client.sessionId,limit);}return ++limit.count<=60;}
   playerList(){return [...this.simulation.players.values()];}
   snapshot(client:Client){client.send('snapshot',{players:this.playerList(),capacity:4,strokes:[],gameState:this.simulation.snapshot()});}
-  onJoin(client:Client){this.simulation.add(client.sessionId);this.broadcast('presence',{players:this.playerList(),capacity:4});}
-  async onDrop(client:Client){this.simulation.connected(client.sessionId,false);try{await this.allowReconnection(client,15);}catch{this.simulation.remove(client.sessionId);}}
-  onReconnect(client:Client){this.simulation.connected(client.sessionId,true);this.snapshot(client);}
-  onLeave(client:Client){this.simulation.remove(client.sessionId);this.limits.delete(client.sessionId);this.broadcast('presence',{players:this.playerList(),capacity:4});}
+  onJoin(client:Client, options:{roomCodeRejoinSessionId?:string}){
+    this.privateCodeRoomJoined();
+    const replaced = this.consumeRoomCodeRejoin(options?.roomCodeRejoinSessionId);
+    if (!replaced || !this.simulation.replaceDisconnectedId(replaced, client.sessionId)) this.simulation.add(client.sessionId);
+    this.broadcast('presence',{players:this.playerList(),capacity:4});
+  }
+  async onDrop(client:Client){
+    this.simulation.connected(client.sessionId,false);
+    this.broadcast('presence',{players:this.playerList(),capacity:4});
+    await this.waitForCodeRecovery(client,()=>{if(this.clients.length===0)this.removePlayer(client.sessionId);});
+  }
+  onReconnect(client:Client){this.privateCodeRoomJoined();this.clearRoomCodeRecovery(client.sessionId);this.simulation.connected(client.sessionId,true);this.snapshot(client);}
+  onLeave(client:Client,code?:number){if(this.privateCodeRoomLeft(client)||this.isRoomCodeRejoinPending(client.sessionId)||this.hasRoomCodeRecovery(client.sessionId))return;if(code===CloseCode.CONSENTED){this.removePlayer(client.sessionId);return;}this.simulation.connected(client.sessionId,false);this.reserveDisconnectedCodeSeat(client.sessionId,()=>this.removePlayer(client.sessionId));this.broadcast('presence',{players:this.playerList(),capacity:4});}
+  private removePlayer(sessionId:string){this.simulation.remove(sessionId);this.limits.delete(sessionId);this.broadcast('presence',{players:this.playerList(),capacity:4});}
+  protected onRoomCodeRejoinCancelled(sessionId:string){this.removePlayer(sessionId);}
 }

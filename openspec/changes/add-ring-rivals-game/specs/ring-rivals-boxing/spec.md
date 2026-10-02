@@ -7,7 +7,7 @@ Provides private authoritative online boxing sessions for two connected clients,
 ## ADDED Requirements
 
 ### Requirement: Ring Rivals players join isolated private two-seat rooms
-The service SHALL create or admit clients to a `ring-rivals` room using six-character invite codes, enforce a capacity of two, and isolate its state and messages from every other game.
+The service SHALL create or admit clients to a `ring-rivals` room using unique four-character uppercase alphanumeric invite codes, enforce a capacity of two, and isolate its state and messages from every other game.
 
 #### Scenario: Create and join a room
 - **WHEN** one client creates a room and another joins its valid code
@@ -33,15 +33,15 @@ The service SHALL validate bounded player-owned action inputs and authoritativel
 - **THEN** the server ignores it and preserves authoritative game state
 
 ### Requirement: A dropped boxer can reclaim the same seat briefly
-The room SHALL reserve a disconnected seat and suspend its round clock for up to 15 seconds. A valid Colyseus reconnection SHALL restore the same identity and match state; expiry SHALL award the connected opponent a forfeit.
+The room SHALL reserve a disconnected seat and suspend its round clock for up to 15 seconds for automatic recovery. A valid Colyseus reconnection SHALL restore the same identity during that interval. A player joining through the room code SHALL receive a fresh identity and reclaim the vacant seat for as long as the room remains active; this code-based recovery SHALL preserve the connected opponent and match state.
 
 #### Scenario: Recover within the grace period
 - **WHEN** the dropped client reconnects before its 15-second reservation expires
 - **THEN** the same session, boxer, and current bout resume
 
-#### Scenario: Recovery expires
-- **WHEN** the client does not reconnect before the reservation expires
-- **THEN** the seat is removed and the connected player wins by forfeit
+#### Scenario: Room-code recovery after automatic recovery expires
+- **WHEN** the client does not reconnect within 15 seconds but the opponent remains connected
+- **THEN** the vacant seat remains available to a player joining with the room code, using a fresh identity
 
 ### Requirement: Existing shared-client consumers remain compatible
 The client package SHALL retain its existing default fresh-identity reconnect behavior and enable same-identity recovery only for game protocols that explicitly support it.

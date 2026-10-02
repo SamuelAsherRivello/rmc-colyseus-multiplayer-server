@@ -19,6 +19,8 @@ export class GungeonSimulation {
     this.players.set(id,{id,number:n,name:['Copper','Mint','Violet','Gold'][n-1],color:['#ff8c64','#69e4c7','#bd9bff','#ffdb77'][n-1],x:14+(n%2)*2,y:8+Math.floor((n-1)/2)*2,hp:100,maxHp:100,weapon:'pistol',ready:this.phase!=='lobby',cooldown:0,rollCooldown:0,rolling:0,shield:3,revive:0,damage:1,haste:1,speed:1,credits:0,kills:0,angle:0,burst:0,burstIn:0,lastInput:-100,input:zero()});
   }
   remove(id:string){this.players.delete(id);this.shots=this.shots.filter(s=>s.owner!==id);if(this.phase==='combat'&&this.players.size&&![...this.players.values()].some(p=>p.hp>0)){this.phase='defeat';this.announce('The team has fallen');}}
+  disconnect(id:string){const player=this.players.get(id);if(player){player.input=zero();player.lastInput=-100;}}
+  replaceDisconnected(id:string,nextId:string){const player=this.players.get(id);if(!player||this.players.has(nextId))return false;this.players.delete(id);player.id=nextId;player.input=zero();player.lastInput=-100;this.players.set(nextId,player);for(const shot of this.shots)if(shot.owner===id)shot.owner=nextId;return true;}
   input(id:string,data:unknown){const p=this.players.get(id);const d=data as Input;if(!p||!d||typeof d!=='object'||!['x','y','ax','ay'].every(k=>typeof d[k as keyof Input]==='number'&&Number.isFinite(d[k as keyof Input])&&Math.abs(d[k as keyof Input] as number)<=1)||typeof d.shoot!=='boolean'||typeof d.roll!=='boolean')return;
     p.input={x:d.x,y:d.y,ax:d.ax,ay:d.ay,shoot:d.shoot,roll:d.roll};p.lastInput=this.time;
   }

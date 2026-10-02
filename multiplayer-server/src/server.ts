@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { Room, Server, ServerError, matchMaker, type Client } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
+import { generatePrivateRoomCode, normalizePrivateRoomCode, PrivateRoomCodeRateLimiter } from "./private-room-codes.js";
 import { BombermanRoom } from './bomberman-room.js';
 import { GungeonRoom } from "./gungeon-room.js";
 import { DrawingRoom } from "./drawing-room.js";
@@ -32,8 +33,9 @@ const games = new Map<string, GameRoom>([
 ]);
 let joining: Promise<unknown> = Promise.resolve();
 const streetFighterInvites = new Map<string, { roomId: string; tokens: Set<string> }>();
+const privateRoomCodeAttempts = new PrivateRoomCodeRateLimiter();
 class FullRoomError extends Error {}
-class AdmissionError extends Error { constructor(public status:number,message:string){super(message);} }
+class AdmissionError extends Error { constructor(public status:number,message:string,public errorCode?:string){super(message);} }
 async function reserveDungeon(body:unknown, game = 'gungeon') {
   const data=body as {create?:boolean;code?:string};
   if(!data||typeof data!=='object')throw new AdmissionError(400,'Choose create or a room code');
@@ -41,15 +43,30 @@ async function reserveDungeon(body:unknown, game = 'gungeon') {
     const rooms=await matchMaker.query({name:game});
     if(data.create===true){
       if(rooms.length>=50)throw new AdmissionError(503,'Too many rooms - try again later');
-      let code='';do {code=randomUUID().replace(/-/g,'').slice(0,6).toUpperCase();}while(rooms.some(r=>r.metadata?.code===code));
+      const requested = data.code === undefined ? undefined : normalizePrivateRoomCode(data.code);
+      if (data.code !== undefined && !requested) throw new AdmissionError(400,'Enter a four-character room code');
+      const isTaken = (code: string) => rooms.some(room => room.metadata?.code === code);
+      if (requested && isTaken(requested)) throw new AdmissionError(409,'That room code is already in use. Choose another.', 'code_in_use');
+      let code: string;
+      try { code = requested ?? generatePrivateRoomCode(isTaken); }
+      catch { throw new AdmissionError(503,'Room codes are temporarily unavailable. Try again.'); }
       const room=await matchMaker.createRoom(game,{code});
       return {reservation:await matchMaker.joinById(room.roomId),code};
     }
-    if(typeof data.code!=='string'||!/^[A-Z0-9]{6}$/.test(data.code))throw new AdmissionError(400,'Enter a six-character room code');
-    const room=rooms.find(r=>r.metadata?.code===data.code);
+    const code = normalizePrivateRoomCode(data.code);
+    if(!code)throw new AdmissionError(400,'Enter a four-character room code');
+    const room=rooms.find(r=>r.metadata?.code===code);
     if(!room)throw new AdmissionError(404,'Room expired or code not found. Create a new room.');
-    if(room.locked||room.clients>=room.maxClients)throw new FullRoomError();
-    return {reservation:await matchMaker.joinById(room.roomId),code:data.code};
+    const privateRoom = matchMaker.getLocalRoomById(room.roomId);
+    const roomCodeRejoinSessionId = privateRoom instanceof BombermanRoom || privateRoom instanceof GungeonRoom || privateRoom instanceof RingRivalsRoom
+      ? await privateRoom.prepareRoomCodeRejoin() : undefined;
+    if((room.locked||room.clients>=room.maxClients) && !roomCodeRejoinSessionId) throw new FullRoomError();
+    if (roomCodeRejoinSessionId) await privateRoom.unlock();
+    try { return {reservation:await matchMaker.joinById(room.roomId, roomCodeRejoinSessionId ? { roomCodeRejoinSessionId } : {}),code}; }
+    catch (error) {
+      if (roomCodeRejoinSessionId && (privateRoom instanceof BombermanRoom || privateRoom instanceof GungeonRoom || privateRoom instanceof RingRivalsRoom)) await privateRoom.cancelRoomCodeRejoin(roomCodeRejoinSessionId);
+      throw error;
+    }
   });joining=pending;return pending;
 }
 async function reserveStreetFighter(body: unknown) {
@@ -60,29 +77,40 @@ async function reserveStreetFighter(body: unknown) {
     for (const [code, value] of streetFighterInvites) if (!rooms.some((room) => room.roomId === value.roomId)) streetFighterInvites.delete(code);
     if (data.create === true) {
       if (rooms.length >= 50) throw new AdmissionError(503, "Too many active duels; try again later");
-      let code = "";
-      do { code = randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase(); } while (streetFighterInvites.has(code));
+      const requested = data.code === undefined ? undefined : normalizePrivateRoomCode(data.code);
+      if (data.code !== undefined && !requested) throw new AdmissionError(400, "Enter a four-character room code");
+      if (requested && streetFighterInvites.has(requested)) throw new AdmissionError(409, "That room code is already in use. Choose another.", "code_in_use");
+      let code: string;
+      try { code = requested ?? generatePrivateRoomCode(candidate => streetFighterInvites.has(candidate)); }
+      catch { throw new AdmissionError(503, "Room codes are temporarily unavailable. Try again."); }
       const token = randomUUID();
       const room = await matchMaker.createRoom("street-fighter-ii", { code });
       streetFighterInvites.set(code, { roomId: room.roomId, tokens: new Set([token]) });
       try { return { reservation: await matchMaker.joinById(room.roomId, { reconnectToken: token }), code, token }; }
       catch (error) { streetFighterInvites.delete(code); throw error; }
     }
-    if (typeof data.code !== "string" || !/^[A-Z0-9]{6}$/.test(data.code)) throw new AdmissionError(400, "Enter a six-character room code");
-    const invite = streetFighterInvites.get(data.code);
+    const code = normalizePrivateRoomCode(data.code);
+    if (!code) throw new AdmissionError(400, "Enter a four-character room code");
+    const invite = streetFighterInvites.get(code);
     if (!invite || !rooms.some((room) => room.roomId === invite.roomId)) throw new AdmissionError(404, "Room expired or code not found");
     if (data.reconnectToken) {
       if (!invite.tokens.has(data.reconnectToken)) throw new AdmissionError(403, "Reconnect token is invalid or expired");
       const room = rooms.find((entry) => entry.roomId === invite.roomId)!;
       if (room.locked || room.clients >= 2) throw new FullRoomError();
-      return { reservation: await matchMaker.joinById(invite.roomId, { reconnectToken: data.reconnectToken }), code: data.code, token: data.reconnectToken };
+      return { reservation: await matchMaker.joinById(invite.roomId, { reconnectToken: data.reconnectToken }), code, token: data.reconnectToken };
     }
-    if (invite.tokens.size >= 2) throw new FullRoomError();
     const room = rooms.find((entry) => entry.roomId === invite.roomId)!;
-    if (room.locked || room.clients >= 2) throw new FullRoomError();
+    const privateRoom = matchMaker.getLocalRoomById(invite.roomId);
+    if (privateRoom instanceof StreetFighterRoom) {
+      const liveTokens = new Set(privateRoom.activeTokens());
+      for (const token of invite.tokens) if (!liveTokens.has(token)) invite.tokens.delete(token);
+    }
+    const roomCodeRejoinSessionId = privateRoom instanceof StreetFighterRoom ? await privateRoom.prepareRoomCodeRejoin() : undefined;
+    if ((room.locked || room.clients >= 2) && !roomCodeRejoinSessionId) throw new FullRoomError();
+    if (roomCodeRejoinSessionId && privateRoom instanceof StreetFighterRoom) await privateRoom.unlock();
     const token = randomUUID(); invite.tokens.add(token);
-    try { return { reservation: await matchMaker.joinById(invite.roomId, { reconnectToken: token }), code: data.code, token }; }
-    catch (error) { invite.tokens.delete(token); throw error; }
+    try { return { reservation: await matchMaker.joinById(invite.roomId, { reconnectToken: token, ...(roomCodeRejoinSessionId ? { roomCodeRejoinSessionId } : {}) }), code, token }; }
+    catch (error) { invite.tokens.delete(token); if (roomCodeRejoinSessionId && privateRoom instanceof StreetFighterRoom) await privateRoom.cancelRoomCodeRejoin(roomCodeRejoinSessionId); throw error; }
   });
   joining = pending; return pending;
 }
@@ -110,6 +138,7 @@ const httpServer = createServer();
 const gameServer = new Server({
   transport: new WebSocketTransport({ server: httpServer, maxPayload: 16384, pingInterval: 3000, pingMaxRetries: 2 }),
   express: (app) => {
+    app.set("trust proxy", 1);
 
     app.use((req, res, next) => {
       res.setHeader("Access-Control-Allow-Origin", "*");
@@ -123,6 +152,13 @@ const gameServer = new Server({
       if (!games.has(req.params.game)) { res.status(404).json({ error: "Unknown game" }); return; }
       try {
         const game = req.params.game;
+        if (["gungeon", "bomberman", "ring-rivals", "street-fighter-ii"].includes(game) && (req.body as { create?: boolean })?.create !== true) {
+          if (!privateRoomCodeAttempts.take(req.ip || req.socket.remoteAddress || "unknown")) {
+            res.setHeader("Retry-After", "60");
+            res.status(429).json({ error: "Too many room-code attempts. Try again shortly.", errorCode: "rate_limited" });
+            return;
+          }
+        }
         const reservation = game === "street-fighter-ii"
           ? await reserveStreetFighter(req.body)
           : ["gungeon", "bomberman", "ring-rivals"].includes(game)
@@ -131,7 +167,7 @@ const gameServer = new Server({
         res.json(reservation);
       }
       catch (error) {
-        if (error instanceof AdmissionError) res.status(error.status).json({ error: error.message });
+        if (error instanceof AdmissionError) res.status(error.status).json({ error: error.message, ...(error.errorCode ? { errorCode: error.errorCode } : {}) });
         else if (error instanceof FullRoomError) res.status(409).json({ error: "Room full" });
         else { console.error("Join failed", (error as Error).message); res.status(503).json({ error: "Room temporarily unavailable" }); }
       }

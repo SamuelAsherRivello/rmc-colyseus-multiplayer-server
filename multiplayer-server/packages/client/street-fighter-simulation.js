@@ -43,7 +43,7 @@ export class StreetFighterSimulation {
 
   add(sessionId, token) {
     if (this.sessionSeats.has(sessionId) || this.seats.length >= 2 || !token) return null;
-    const seat = { sessionId, token, number: this.seats.length + 1, fighter: STREET_FIGHTER_KEYS[this.seats.length], ready: false, connected: true, input: { ...NEUTRAL }, seq: -1, inputAge: 0 };
+    const seat = { sessionId, token, number: this.seats.length + 1, fighter: STREET_FIGHTER_KEYS[this.seats.length], ready: false, connected: true, previousSessionId: null, input: { ...NEUTRAL }, seq: -1, inputAge: 0 };
     this.seats.push(seat); this.sessionSeats.set(sessionId, seat);
     if (this.seats.length === 2) this.announce("Select fighters and ready up");
     return seat;
@@ -52,8 +52,18 @@ export class StreetFighterSimulation {
   reconnect(sessionId, token) {
     const seat = this.seats.find((entry) => entry.token === token && !entry.connected && this.reconnectRemaining > 0);
     if (!seat) return null;
-    seat.sessionId = sessionId; seat.connected = true; seat.input = { ...NEUTRAL }; seat.inputAge = 0;
+    seat.sessionId = sessionId; seat.previousSessionId = null; seat.connected = true; seat.input = { ...NEUTRAL }; seat.inputAge = 0;
     this.sessionSeats.set(sessionId, seat); this.reconnectRemaining = 0; this.phase = this.resumePhase;
+    this.announce(`${FIGHTERS[seat.fighter].name} rejoined`);
+    return seat;
+  }
+
+  replaceDisconnected(oldSessionId, newSessionId, token) {
+    const seat = this.seats.find(entry => !entry.connected && entry.previousSessionId === oldSessionId);
+    if (!seat || !token || this.sessionSeats.has(newSessionId)) return null;
+    seat.sessionId = newSessionId; seat.previousSessionId = null; seat.token = token; seat.connected = true;
+    seat.input = { ...NEUTRAL }; seat.inputAge = 0;
+    this.sessionSeats.set(newSessionId, seat); this.reconnectRemaining = 0; this.phase = this.resumePhase;
     this.announce(`${FIGHTERS[seat.fighter].name} rejoined`);
     return seat;
   }
@@ -61,10 +71,19 @@ export class StreetFighterSimulation {
   disconnect(sessionId) {
     const seat = this.sessionSeats.get(sessionId);
     if (!seat) return;
-    this.sessionSeats.delete(sessionId); seat.sessionId = null; seat.connected = false; seat.input = { ...NEUTRAL };
+    this.sessionSeats.delete(sessionId); seat.previousSessionId = sessionId; seat.sessionId = null; seat.connected = false; seat.input = { ...NEUTRAL };
     this.resumePhase = this.phase === "reconnecting" ? this.resumePhase : this.phase;
     this.phase = "reconnecting"; this.reconnectRemaining = 15;
     this.announce("Opponent disconnected — reconnect window 15 seconds");
+  }
+
+  leave(sessionId) {
+    const seat = this.sessionSeats.get(sessionId);
+    if (!seat) return;
+    this.sessionSeats.delete(sessionId);
+    this.seats = this.seats.filter(entry => entry !== seat);
+    this.seats.forEach((entry, index) => { entry.number = index + 1; });
+    if (this.seats.length < 2 && this.phase !== "lobby") this.phase = "lobby";
   }
 
   select(sessionId, fighter) {
@@ -99,8 +118,6 @@ export class StreetFighterSimulation {
       this.reconnectRemaining -= delta;
       if (this.reconnectRemaining <= 0) {
         const disconnected = this.seats.find((seat) => !seat.connected);
-        this.seats = this.seats.filter((seat) => seat.connected);
-        this.seats.forEach((seat, index) => { seat.number = index + 1; });
         this.phase = "match-over";
         this.match.phase = "match-over"; this.match.winner = disconnected?.number === 1 ? "p2" : "p1";
         this.match.announcement = "OPPONENT FORFEIT — MATCH OVER"; this.announce(this.match.announcement);
