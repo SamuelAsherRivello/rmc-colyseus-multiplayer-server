@@ -23,6 +23,12 @@ async function join(game = 'neon-breaker-duo') {
   return client;
 }
 
+function assertWaveOneBrickRows(gameState, label) {
+  const rows = new Map();
+  for (const brick of gameState.bricks) rows.set(brick.y, (rows.get(brick.y) ?? 0) + 1);
+  assert.deepEqual([...rows].sort(([a], [b]) => a - b), [[74, 11], [94, 11], [114, 11], [134, 7]], `${label} contains every first-wave brick row`);
+}
+
 test('Neon Breaker synchronizes actions, admits two, snapshots late joins, frees seats, and isolates games', { timeout: 90000 }, async t => {
   let server;
   try {
@@ -54,6 +60,7 @@ test('Neon Breaker synchronizes actions, admits two, snapshots late joins, frees
 
     assert.equal(a.state.gameState.lives, 3);
     assert.deepEqual(a.state.gameState.paddles.map(({ y }) => y), [490, 440]);
+    assertWaveOneBrickRows(a.state.gameState, 'host snapshot');
     const initialServerTime = a.state.gameState.serverTime;
     assert.ok(Number.isFinite(initialServerTime), 'snapshots include the authoritative server clock');
     await until(() => a.state.gameState.serverTime > initialServerTime, 'server clock advances with game snapshots');
@@ -73,6 +80,9 @@ test('Neon Breaker synchronizes actions, admits two, snapshots late joins, frees
     await until(() => a.state.gameState.paddles?.length === 2 && b.state.gameState.paddles?.length === 2, 'complete game snapshots');
     assert.deepEqual(a.state.gameState.paddles.map(({ y }) => y), [490, 440]);
     assert.deepEqual(b.state.gameState.paddles.map(({ y }) => y), [490, 440]);
+    assertWaveOneBrickRows(a.state.gameState, 'host live state');
+    assertWaveOneBrickRows(b.state.gameState, 'late-join snapshot');
+    assert.deepEqual(a.state.gameState.bricks, b.state.gameState.bricks, 'both seats observe the same authoritative brick rows and hit points');
     b.send('input', { x: .98 });
     a.send('input', { x: .98 });
     await until(() => Math.abs(a.state.gameState.paddles[seatA].x - a.state.gameState.paddles[seatB].x) < 1, 'paddles can overlap');
