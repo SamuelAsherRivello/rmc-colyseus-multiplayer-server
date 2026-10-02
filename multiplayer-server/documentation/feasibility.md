@@ -13,6 +13,8 @@ The updated Vercel plan is technically capable of WebSockets, but its limits and
 
 This is a quota projection from the current source cadence, not a live Upstash usage measurement. No Redis commands completed: no-signup scratch database provisioning succeeded, but requests to its generated Upstash REST host timed out from both the local environment and a GitHub-hosted runner. The temporary, unclaimed scratch databases expire automatically after 72 hours. Since the candidate store could not be reached, atomic room admission, ordered pub/sub, reconnect restoration, latency, and actual command/bandwidth use remain unverified. The updated OpenSpec's cross-instance and no-paid-overage gate therefore remains open. The previous public Vercel endpoint is still serving the old single-instance process-local implementation; endpoint health does not establish cross-instance room continuity or free-tier capacity.
 
+Current local verification on 2026-10-02: `npm run typecheck` passed and `npm test` passed all 74 tests against the process-local implementation. This confirms the current games still pass their local suites; it does not satisfy OpenSpec tasks 4.1 or 4.2 because the shared-state/Vercel migration has not been implemented and the public endpoint remains on the incompatible v0.9.7 release.
+
 Deployment dpl_CQGsysdik4aLRxSh67ETibeSkw9L at https://rmc-colyseus-multiplayer-server.vercel.app.
 
 - TypeScript check: pass.
