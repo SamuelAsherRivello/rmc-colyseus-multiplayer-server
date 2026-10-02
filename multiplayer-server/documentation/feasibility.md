@@ -2,7 +2,7 @@
 
 ## Updated free Vercel feasibility — 2026-10-02
 
-The current public Vercel endpoint `https://rmc-colyseus-multiplayer-server.vercel.app/api/health` returned HTTP 200 on 2026-10-02 and reports version `0.9.7`. Its release tag predates the local private-room-flow implementation: `v0.9.7:multiplayer-server/src/server.ts` accepts six-character codes for Gungeon, Bomberman, and Ring Rivals, and the tagged client does not export the four-character room-link helpers. Do not publish consumers that use the new four-character flow until a compatible backend release is deployed.
+The current public Vercel endpoint `https://rmc-colyseus-multiplayer-server.vercel.app/api/health` returned HTTP 200 on 2026-10-02 and reports version `0.9.7`. Its release tag predates the local private-room-flow implementation: `v0.9.7:multiplayer-server/src/server.ts` accepts six-character codes for Gungeon, Bomberman, and Ring Rivals, and the tagged client does not export the four-character room-link helpers. A live Neon Breaker integration check also failed because the v0.9.7 snapshot omits `serverTime`, which the current source and client-side smoothing contract require. Do not publish consumers that use the new four-character flow or claim timestamp-based snapshot verification until a compatible backend release is deployed.
 
 The updated Vercel plan is technically capable of WebSockets, but its limits and the candidate shared-store quota are a material fit risk:
 
