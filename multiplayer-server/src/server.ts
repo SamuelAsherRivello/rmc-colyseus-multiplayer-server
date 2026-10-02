@@ -16,6 +16,7 @@ import { RacingRoom } from "./racing-room.js";
 import { StreetFighterRoom } from "./street-fighter-room.js";
 import { NeonBreakerRoom } from "./neon-breaker-room.js";
 import { RingRivalsRoom } from "./ring-rivals-room.js";
+import { PrivateCodeRoom } from "./private-code-room.js";
 
 const instance = randomUUID();
 const defaultMatchmaking = matchMaker.controller.invokeMethod.bind(matchMaker.controller);
@@ -36,6 +37,18 @@ const streetFighterInvites = new Map<string, { roomId: string; tokens: Set<strin
 const privateRoomCodeAttempts = new PrivateRoomCodeRateLimiter();
 class FullRoomError extends Error {}
 class AdmissionError extends Error { constructor(public status:number,message:string,public errorCode?:string){super(message);} }
+async function prepareRoomCodeRejoin(room: PrivateCodeRoom): Promise<string | undefined> {
+  // A browser refresh can send its new room-code request before Colyseus has
+  // handled the old socket's close event. Give that lifecycle event a short
+  // window to create a recoverable seat or release room capacity.
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const sessionId = await room.prepareRoomCodeRejoin();
+    if (sessionId) return sessionId;
+    if (!room.locked && room.clients.length < room.maxClients) return undefined;
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+  return undefined;
+}
 async function reserveDungeon(body:unknown, game = 'gungeon') {
   const data=body as {create?:boolean;code?:string};
   if(!data||typeof data!=='object')throw new AdmissionError(400,'Choose create or a room code');
@@ -58,13 +71,15 @@ async function reserveDungeon(body:unknown, game = 'gungeon') {
     const room=rooms.find(r=>r.metadata?.code===code);
     if(!room)throw new AdmissionError(404,'Room expired or code not found. Create a new room.');
     const privateRoom = matchMaker.getLocalRoomById(room.roomId);
-    const roomCodeRejoinSessionId = privateRoom instanceof BombermanRoom || privateRoom instanceof GungeonRoom || privateRoom instanceof RingRivalsRoom
-      ? await privateRoom.prepareRoomCodeRejoin() : undefined;
-    if((room.locked||room.clients>=room.maxClients) && !roomCodeRejoinSessionId) throw new FullRoomError();
-    if (roomCodeRejoinSessionId) await privateRoom.unlock();
+    const codeRoom = privateRoom instanceof BombermanRoom || privateRoom instanceof GungeonRoom || privateRoom instanceof RingRivalsRoom
+      ? privateRoom : undefined;
+    const roomCodeRejoinSessionId = codeRoom ? await prepareRoomCodeRejoin(codeRoom) : undefined;
+    const full = codeRoom ? codeRoom.locked || codeRoom.clients.length >= codeRoom.maxClients : room.locked || room.clients >= room.maxClients;
+    if(full && !roomCodeRejoinSessionId) throw new FullRoomError();
+    if (roomCodeRejoinSessionId && codeRoom) await codeRoom.unlock();
     try { return {reservation:await matchMaker.joinById(room.roomId, roomCodeRejoinSessionId ? { roomCodeRejoinSessionId } : {}),code}; }
     catch (error) {
-      if (roomCodeRejoinSessionId && (privateRoom instanceof BombermanRoom || privateRoom instanceof GungeonRoom || privateRoom instanceof RingRivalsRoom)) await privateRoom.cancelRoomCodeRejoin(roomCodeRejoinSessionId);
+      if (roomCodeRejoinSessionId && codeRoom) await codeRoom.cancelRoomCodeRejoin(roomCodeRejoinSessionId);
       throw error;
     }
   });joining=pending;return pending;
@@ -105,8 +120,9 @@ async function reserveStreetFighter(body: unknown) {
       const liveTokens = new Set(privateRoom.activeTokens());
       for (const token of invite.tokens) if (!liveTokens.has(token)) invite.tokens.delete(token);
     }
-    const roomCodeRejoinSessionId = privateRoom instanceof StreetFighterRoom ? await privateRoom.prepareRoomCodeRejoin() : undefined;
-    if ((room.locked || room.clients >= 2) && !roomCodeRejoinSessionId) throw new FullRoomError();
+    const roomCodeRejoinSessionId = privateRoom instanceof StreetFighterRoom ? await prepareRoomCodeRejoin(privateRoom) : undefined;
+    const full = privateRoom instanceof StreetFighterRoom ? privateRoom.locked || privateRoom.clients.length >= privateRoom.maxClients : room.locked || room.clients >= 2;
+    if (full && !roomCodeRejoinSessionId) throw new FullRoomError();
     if (roomCodeRejoinSessionId && privateRoom instanceof StreetFighterRoom) await privateRoom.unlock();
     const token = randomUUID(); invite.tokens.add(token);
     try { return { reservation: await matchMaker.joinById(invite.roomId, { reconnectToken: token, ...(roomCodeRejoinSessionId ? { roomCodeRejoinSessionId } : {}) }), code, token }; }

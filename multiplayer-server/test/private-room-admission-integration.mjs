@@ -17,11 +17,11 @@ async function join(game, options) {
   await until(() => ['connected', 'full', 'error'].includes(client.state.status), 'join ' + client.state.error);
   return client;
 }
-async function dropAbruptly(client) {
+async function dropAbruptly(client, settleMs = 200) {
   client.stopped = true;
   client.room.reconnection.enabled = false;
   client.room.connection.close();
-  await delay(200);
+  if (settleMs > 0) await delay(settleMs);
 }
 function persistentPlayer(game, client) {
   if (!client.state.gameState) return undefined;
@@ -105,9 +105,7 @@ test('private room creation accepts custom codes, rejects collisions, normalizes
       const blocked = await join(game, { code });
       assert.equal(blocked.state.status, 'full', `${game} does not replace a connected seat`);
       const oldSessionId = second.state.sessionId;
-      const oldPlayerNumber = second.state.players.find(player => player.id === oldSessionId)?.number;
-      await dropAbruptly(second);
-      await waitForDisconnect(game, first, oldSessionId, oldPlayerNumber);
+      await dropAbruptly(second, 0);
       const replacement = await join(game, { code });
       assert.equal(replacement.state.status, 'connected', `${game} replacement: ${replacement.state.error}`);
       assert.equal(replacement.state.roomId, roomId, `${game} keeps the same coded room`);
