@@ -12,6 +12,7 @@ This repository provides the shared multiplayer service and has no standalone de
 - [**Dust Circuit Rally**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race four off-road trucks in a fixed-camera landscape circuit with solo, local and online modes.
 - [**Enter the Gungeon Clone**](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) — survive bullet waves together in private 1–4-player rooms with dodge rolls, upgrades and revives.
 - [**Garden Chat**](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) — wander a shared garden and chat with other visitors.
+- **Just Like Rabbits** — shared rabbit observation habitat with participant-host migration. (In development.)
 - [**Gauntlet Clone 2D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) — cooperate to battle monsters, revive allies, and escape a tile-based dungeon.
 - [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
 - [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — draw together from separate computers or browser tabs.
@@ -120,6 +121,10 @@ HTTP: `GET /api/health`; `POST /api/join/multiplayer-draw` returns a Colyseus se
 ### Hosting Limits
 
 The Render Blueprint configures one authoritative process so the in-memory room index and matchmaking state stay together. Render does not impose a fixed WebSocket duration, but connections end when the instance is replaced, including during deploys or platform maintenance. The server does not restore room state after process loss. Players can use the room link to rejoin while the room still exists; a fresh process requires a new room. See [Render WebSocket behavior](https://render.com/docs/websocket) and the [recorded hosting evidence](multiplayer-server/documentation/feasibility.md).
+
+### Additive release policy
+
+Games may add isolated room keys and additive shared-client capabilities after the full server regression suite passes. A deployment can interrupt active in-memory rooms, which is an accepted temporary limitation; compatible existing games reconnect using their existing protocol. Update another game only when a targeted compatibility check identifies an actual contract change, not merely because a new game was added.
 
 There is no durable storage, account system, or separate lobby service. Keep the old Vercel endpoint running until every coded-room consumer has moved to the Render endpoint and passed its public checks.
 

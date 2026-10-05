@@ -17,6 +17,7 @@ import { StreetFighterRoom } from "./street-fighter-room.js";
 import { NeonBreakerRoom } from "./neon-breaker-room.js";
 import { RingRivalsRoom } from "./ring-rivals-room.js";
 import { PrivateCodeRoom } from "./private-code-room.js";
+import { JustLikeRabbitsRoom } from "./just-like-rabbits-room.js";
 
 const instance = randomUUID();
 const defaultMatchmaking = matchMaker.controller.invokeMethod.bind(matchMaker.controller);
@@ -24,13 +25,13 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
-type GameRoom = typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom | typeof RingRivalsRoom | typeof StreetFighterRoom;
+type GameRoom = typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom | typeof RingRivalsRoom | typeof StreetFighterRoom | typeof JustLikeRabbitsRoom;
 const games = new Map<string, GameRoom>([
   ["bomberman", BombermanRoom], ["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom],
   ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom],
   ["gauntlet-3d", GauntletRoom], ["dust-circuit-rally", RacingRoom],
   ["neon-breaker-duo", NeonBreakerRoom], ["ring-rivals", RingRivalsRoom],
-  ["street-fighter-ii", StreetFighterRoom],
+  ["street-fighter-ii", StreetFighterRoom], ["just-like-rabbits", JustLikeRabbitsRoom],
 ]);
 let joining: Promise<unknown> = Promise.resolve();
 const streetFighterInvites = new Map<string, { roomId: string; tokens: Set<string> }>();

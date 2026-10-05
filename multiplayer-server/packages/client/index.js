@@ -31,7 +31,7 @@ export class MultiplayerClient {
     const linkedCode = readRoomCode();
     if (linkedCode && !options.code && options.create !== true) this.options = { ...this.options, code: linkedCode, create: false };
     this.listeners = new Set();
-    this.state = { status: "idle", players: [], strokes: new Map(), gameState: null, chats: [], capacity: 12, sessionId: null, seat: null, error: "" };
+    this.state = { status: "idle", players: [], strokes: new Map(), gameState: null, chats: [], capacity: 12, sessionId: null, seat: null, hostId: null, transfer: null, lastAction: null, error: "" };
     this.stopped = true;
     this.generation = 0;
     this.retryDelay = 1000;
@@ -44,7 +44,7 @@ export class MultiplayerClient {
     clearTimeout(this.timer);
     const old = this.room; this.room = undefined;
     if (old) { old.reconnection.enabled = false; void old.leave(); }
-    this.state = { ...this.state, status: "connecting", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], error: "" };
+    this.state = { ...this.state, status: "connecting", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], hostId: null, transfer: null, lastAction: null, error: "" };
     this.emit("status");
     let room;
     try {
@@ -87,13 +87,15 @@ export class MultiplayerClient {
         this.state.strokes = new Map((data.strokes || []).map(s => [s.id, s]));
         this.state.capacity = data.capacity; this.state.gameState = data.gameState ?? null;
         this.state.chats = data.chats || [];
+        this.state.hostId = data.hostId ?? data.gameState?.hostId ?? null;
+        this.state.transfer = data.gameState?.transfer ?? null;
         this.state.capacity = data.capacity;
         this.state.status = "connected";
         this.state.error = "";
         this.retryDelay = 1000;
         this.emit("snapshot");
       });
-      room.onMessage("gameState", data => { this.state.gameState = data; this.emit("gameState"); });
+      room.onMessage("gameState", data => { this.state.gameState = data; if (data?.hostId !== undefined) { this.state.hostId = data.hostId; this.state.transfer = data.transfer ?? null; } this.emit("gameState"); });
       room.onMessage("presence", data => { Object.assign(this.state, data); this.emit("presence"); });
       room.onMessage("garden", data => { this.state.players = data.players; this.emit("garden"); });
       room.onMessage("chat", data => { this.state.chats = [...(this.state.chats || []), data].slice(-100); this.emit("chat"); });
@@ -116,6 +118,8 @@ export class MultiplayerClient {
         this.emit("departed");
       });
       room.onMessage("notice", text => { this.state.error = text; this.emit("notice"); });
+      room.onMessage("habitatAction", data => { this.state.lastAction = data; this.emit("habitatAction"); });
+      room.onMessage("hostTransfer", data => { this.state.hostId = data?.hostId ?? null; this.state.transfer = data?.transfer ?? null; this.emit("hostTransfer"); });
       room.onError((_code, message) => { this.state.error = message || "Connection error"; this.emit("error"); });
       room.onLeave(() => {
         if (generation !== this.generation || this.stopped) return;
@@ -123,6 +127,7 @@ export class MultiplayerClient {
         this.schedule("Connection lost. Rejoining as a new player…");
       });
       room.send("snapshot");
+      const heartbeat = this.game === "just-like-rabbits" ? setInterval(() => room.send("heartbeat"), 5000) : null;
       const snapshotDeadline = setTimeout(() => {
         if (generation === this.generation && this.state.status !== "connected" && !this.stopped) {
           void room.leave();
@@ -130,7 +135,7 @@ export class MultiplayerClient {
         }
       }, 10000);
       room.onMessage("snapshot", () => clearTimeout(snapshotDeadline));
-      room.onLeave(() => clearTimeout(snapshotDeadline));
+      room.onLeave(() => { clearTimeout(snapshotDeadline); if (heartbeat) clearInterval(heartbeat); });
     } catch (error) {
       if (room) { room.reconnection.enabled = false; void room.leave(); }
       if (generation !== this.generation || this.stopped) return;
@@ -143,7 +148,7 @@ export class MultiplayerClient {
   }
   schedule(message) {
     if (this.stopped) return;
-    this.state = { ...this.state, status: "reconnecting", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], error: message };
+    this.state = { ...this.state, status: "reconnecting", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], hostId: null, transfer: null, lastAction: null, error: message };
     this.emit("status");
     clearTimeout(this.timer);
     this.timer = setTimeout(() => void this.connect(), this.retryDelay);
@@ -155,7 +160,7 @@ export class MultiplayerClient {
     clearTimeout(this.timer);
     const room = this.room; this.room = undefined;
     if (room) { room.reconnection.enabled = false; void room.leave(); }
-    this.state = { ...this.state, status: "offline", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], roomId: null };
+    this.state = { ...this.state, status: "offline", sessionId: null, players: [], strokes: new Map(), gameState: null, chats: [], hostId: null, transfer: null, lastAction: null, roomId: null };
     this.emit("status");
   }
 }

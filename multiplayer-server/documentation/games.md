@@ -5,6 +5,7 @@
 | Bomberman Clone | bomberman | 4 | 0.9.2+ | [Multiplayer preview](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/?mode=online) | [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L39) · [Lifecycle](../src/private-code-room.ts#L14) |
 | Dust Circuit Rally | dust-circuit-rally | 4 | 0.6.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) | — |
 | Garden Chat | garden-chat | 12 | 0.3.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) | — |
+| Just Like Rabbits | just-like-rabbits | 12 | next release | In development | — |
 | Gauntlet Clone 2D | gauntlet-2d | 4 | 0.4.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) | — |
 | Gauntlet Clone 3D | gauntlet-3d | 4 | 0.5.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) | — |
 | Enter the Gungeon Clone | gungeon | 4 | 0.9.7+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) | [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L39) · [Lifecycle](../src/private-code-room.ts#L14) |
@@ -15,6 +16,10 @@
 | Sumo Battle | sumo-battle | 12 | 0.2.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) | — |
 
 All packages are @rmc/multiplayer-client. Before changing a shared protocol, review each game, update affected consumers and test public URLs. Short downtime and session loss are acceptable; leaving existing demos broken is not.
+
+## Just Like Rabbits
+
+`just-like-rabbits` is a twelve-seat shared habitat relay. The oldest active participant is elected host and publishes bounded transferable simulation snapshots; guests submit ordered cues, cultivation, and speed requests but never direct state. Departure promotes the next oldest active participant with the latest relay snapshot. The consumer pins the released shared-client package after a public two-client verification. Deployment can end in-memory rooms, but existing games retain their documented protocols unless a regression test proves otherwise.
 
 ## Enter the Gungeon Clone
 

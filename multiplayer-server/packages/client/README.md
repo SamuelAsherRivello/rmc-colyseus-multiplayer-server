@@ -60,6 +60,14 @@ Create `new MultiplayerClient(endpoint, "sumo-battle")`. Subscribe to `state.gam
 `gameState` contains `match`, simulation `time`, `radius`, `winner` (session ID or null), `restartIn`, `event` ({serial,text}), and `wrestlers`. Wrestlers expose id/number/name/color, bot, x/z, vx/vz, angle, score, cooldown, out (respawn seconds), and shield (spawn grace seconds). The server awards one point to a recent collision opponent when a wrestler exits, and declares the first to three champion. After eight seconds it resets scores for the next match. There is no client reset command. A single human gets a labeled server AI opponent; it is removed when a second human joins. Late joiners receive current state and zero score. Refresh/reconnect loses identity and score. Local pause does not pause opponents. Hosting and deployment can reset matches.
 
 Generic game state clears on connect, connection loss, and disconnect. Existing drawing messages and stroke state remain compatible.
+
+## Just Like Rabbits (next shared-client release)
+
+Use `new MultiplayerClient(endpoint, "just-like-rabbits")`. Capacity is twelve. `state.players` exposes the server-assigned fictional `name`, `number`, `color`, `cursor`, and `host` flag. Cursors are normalized `[x,y]` coordinates in `[0,1]` or `null`; names belong in the roster, not beside cursors. `state.hostId` identifies the elected longest-connected active participant.
+
+Any participant can send `action` with `{type:"cue",payload:[x,y]}`, `{type:"plant"|"water",payload:{x,z}}`, or `{type:"speed",payload:0.5|1|2|4|10}`. The relay orders valid requests as `habitatAction`; only the elected host resolves them. The host sends `{state,random,clock}` as `hostSnapshot`; guests receive `gameState` plus `hostTransfer` and must interpolate presentation rather than run authority. The client sends liveness heartbeats automatically. Local pause does not pause the shared habitat.
+
+The room and identities are in-memory: a process replacement ends the session. Pin the exact client release after its compatible backend deployment and public two-client verification. Existing game consumers do not need changes for an additive game release unless a compatibility check identifies an actual contract change.
 ## Garden Chat
 Use game key `garden-chat`. Send `move` with `{x,z}` normalized axes (refresh within 300ms), or `chat` with a plain string up to 280 characters. State exposes `players` with x/z and `chats` with the latest 100 messages. Events: garden, chat, snapshot, presence, departed. Chat rate: one per 750ms. History is in-memory and resets when the room closes. Local pause must send zero movement.
 
