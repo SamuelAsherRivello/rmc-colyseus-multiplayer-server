@@ -128,6 +128,8 @@ Games may add isolated room keys and additive shared-client capabilities after t
 
 There is no durable storage, account system, or separate lobby service. Keep the old Vercel endpoint running until every coded-room consumer has moved to the Render endpoint and passed its public checks.
 
+The legacy Vercel Hobby endpoint is not a long-lived relay: Vercel Functions permit a WebSocket connection for at most 300 seconds (five minutes), after which clients must reconnect. Its function instances do not share this server's in-memory room state, so it remains unsuitable for publishing new shared-room consumers unless a compatible shared-state deployment is separately verified.
+
 ## Credits
 
 ### 💡 Contributors
