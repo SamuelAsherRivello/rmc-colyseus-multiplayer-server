@@ -52,9 +52,9 @@ Set `SERVER_URL` before `npm test` to run the same ownership, late-join, cleanup
 
 ### 🛠 Release Version
 
-The root `package.json` is the version source. Run the **Release** workflow with a new semantic version. It checks the configured Render service, tests, sets root/client versions, publishes a tagged GitHub Release with the client tarball, and calls **Deploy backend release**. Deployment verifies the selected source, triggers Render, checks the public health version, runs the full suite against the public endpoint, and keeps two WebSocket clients active for six minutes. To deploy manually, dispatch **Deploy backend release** with a tag that points to the current `main` commit.
+The root `package.json` is the version source. Run the **Release** workflow with a new semantic version. It runs the checks, sets root/client versions, publishes a tagged GitHub Release with the client tarball, and calls **Deploy backend release**. Deployment builds the selected tagged source with Vercel, promotes it to production, checks the public health version, runs the full suite against the public endpoint, and holds a two-client relay session for four minutes to remain inside Vercel Hobby's five-minute connection duration. To deploy manually, dispatch **Deploy backend release** with a tag that points to the current `main` commit.
 
-The checked-in `render.yaml` configures one always-on 0.5 CPU / 512 MB web service in Frankfurt with the health endpoint and a five-minute shutdown grace. Render currently lists this compute plan at $7/month. Provision the service from the Blueprint, then configure the repository `RENDER_DEPLOY_HOOK_URL` secret and `RENDER_SERVICE_URL` variable in GitHub Actions before releasing. The workflow never prints the deploy hook. Do not commit credentials.
+The deployment workflow uses the configured GitHub Actions secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`; it never prints them or commits credentials. The legacy `render.yaml` remains for historical recovery only and is not the active release path.
 
 ## Project Details
 

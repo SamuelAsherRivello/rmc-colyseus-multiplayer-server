@@ -24,11 +24,6 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - name: Require a healthy Render service before publishing a release
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-          RENDER_SERVICE_URL: ${{ vars.RENDER_SERVICE_URL }}
-        run: node scripts/check-credentials.mjs
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
