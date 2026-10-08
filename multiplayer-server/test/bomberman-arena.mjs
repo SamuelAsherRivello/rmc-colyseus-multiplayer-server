@@ -13,6 +13,31 @@ test('collision prevents walking through outer walls', () => {
   const g = createGame(); advance(g, 180, { practice: { x: -1 } });
   assert.ok(g.players[0].x >= 1.28);
 });
+test('plants block movement without eliminating players or growing into them', () => {
+  const g = createGame();
+  g.board = g.board.map(value => value === 2 ? 0 : value);
+  const p = g.players[0];
+  g.plants = [index(2, 1)];
+  advance(g, 30, { practice: { x: 1 } });
+  assert.ok(p.x <= 1.72);
+  assert.equal(p.alive, true);
+  p.x = 2.5;
+  assert.equal(placeBomb(g, p), false);
+  stepGame(g);
+  assert.equal(p.alive, true);
+
+  p.x = 5.5;
+  p.y = 6.5;
+  g.plants = [index(5, 5)];
+  g.plantEnabled = true;
+  g.nextPlantTick = g.tick + 1;
+  g.board[index(4, 5)] = 2;
+  g.bombs = [{ id: 1, owner: 'practice', x: 6, y: 5, range: 1, deadline: 150, pass: [] }];
+  g.blasts = [{ id: 2, cells: [index(5, 4)], until: g.tick + 30 }];
+  stepGame(g);
+  assert.deepEqual(g.plants, [index(5, 5)]);
+  assert.equal(p.alive, true);
+});
 test('bomb capacity, fuse, owner damage and blast duration', () => {
   const g = createGame(), p = g.players[0];
   assert.equal(placeBomb(g,p),true); assert.equal(placeBomb(g,p),false);
@@ -107,4 +132,30 @@ test('inward wall schedule is deterministic, unique and fits the final thirty se
   assert.equal(closed.length,g.board.filter((value,i)=>value!==1&&i>=15&&i<180).length);
   assert.equal(g.waves[0].warnTick,5400);assert.ok(g.waves.at(-1).closeTick<7200);
   assert.deepEqual(g.waves,createGame().waves);
+});
+
+test('Chain Reaction extends every bomb in a same-tick chain and is off by default', () => {
+  const setup = (enabled) => {
+    const g = createGame(['practice'], 1, 'LOW', false, enabled);
+    g.board.fill(0);
+    g.players[0].x = 13.5;
+    g.players[0].y = 11.5;
+    g.bombs = [
+      { id: 1, owner: 'practice', x: 3, y: 3, range: 2, deadline: 1, pass: [] },
+      { id: 2, owner: 'practice', x: 5, y: 3, range: 2, deadline: 150, pass: [] },
+      { id: 3, owner: 'practice', x: 11, y: 3, range: 2, deadline: 150, pass: [] },
+    ];
+    return g;
+  };
+  const ordinary = setup(false);
+  stepGame(ordinary);
+  assert.deepEqual(ordinary.events.filter(e => e.type === 'explosion').map(e => e.bomb), [1, 2]);
+  const chained = setup(true);
+  stepGame(chained);
+  assert.deepEqual(chained.events.filter(e => e.type === 'explosion').map(e => e.bomb), [1, 2, 3]);
+  for (const blast of chained.blasts) {
+    const x = { 1: 3, 2: 5, 3: 11 }[blast.id];
+    assert.ok(blast.cells.includes(index(1, 3)));
+    assert.ok(blast.cells.includes(index(x, 11)));
+  }
 });

@@ -6,7 +6,7 @@ export class BombermanSimulation {
     this.code = code; this.players = new Map(); this.inputs = new Map(); this.received = new Map();
     this.phase = 'lobby'; this.clock = 0; this.round = 0; this.match = 0; this.until = 0;
     this.game = createGame([]); this.winner = null; this.matchWinner = null;
-    this.options={cpu:'MED',map:'LOW',plant:false}; this.brains=new Map(); this.resultAt=0; this.fillSeats();
+    this.options={cpu:'MED',map:'LOW',plant:false,chainReaction:false}; this.brains=new Map(); this.resultAt=0; this.fillSeats();
   }
   fillSeats() {
     for(let number=0;number<4;number++)if(![...this.players.values()].some(p=>p.number===number)){
@@ -20,7 +20,8 @@ export class BombermanSimulation {
     if(data.cpu!==undefined&&!Object.hasOwn(CPU_LEVELS,data.cpu))return false;
     if(data.map!==undefined&&!['LOW','MED','HIGH'].includes(data.map))return false;
     if(data.plant!==undefined&&typeof data.plant!=='boolean')return false;
-    this.options={...this.options,...Object.fromEntries(['cpu','map','plant'].filter(k=>data[k]!==undefined).map(k=>[k,data[k]]))};
+    if(data.chainReaction!==undefined&&typeof data.chainReaction!=='boolean')return false;
+    this.options={...this.options,...Object.fromEntries(['cpu','map','plant','chainReaction'].filter(k=>data[k]!==undefined).map(k=>[k,data[k]]))};
     return true;
   }
   transfer(oldId, next) {
@@ -85,7 +86,7 @@ export class BombermanSimulation {
   begin() {
     this.round++;
     const ordered = [...this.players.values()].sort((a, b) => a.number - b.number);
-    this.game = createGame(ordered.map(p => p.id), this.match * 1000 + this.round,this.options.map,this.options.plant); this.brains.clear();
+    this.game = createGame(ordered.map(p => p.id), this.match * 1000 + this.round,this.options.map,this.options.plant,this.options.chainReaction); this.brains.clear();
     this.inputs.clear(); this.phase = 'countdown'; this.until = this.clock + 180; this.winner = null;
     for (const p of this.players.values()) p.ready = false;
   }

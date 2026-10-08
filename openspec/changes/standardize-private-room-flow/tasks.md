@@ -11,13 +11,15 @@
 - [x] 2.1 Add browser-safe helpers for suggested codes, reading the `room` URL parameter, and building share links while preserving other query parameters; verify helper behavior and existing `MultiplayerClient` API compatibility with client tests and package dry-run.
 - [x] 2.2 Document the **Play Online** / **Join Room** / **Create Room** pattern and refresh behavior in the shared-client README; update the root Custom Shared Features row with links to the exact documentation section and admission/lifecycle source; verify every linked path and line anchor.
 
-## 3. Move production to a long-lived Node host
+## 3. Host resumable rooms on free Vercel services
 
-- [x] 3.1 Add a Node 24 container/runtime entrypoint with health checks and single-process matchmaking configuration; verify the image builds and a local container accepts two clients into the same coded room.
-- [ ] 3.2 Select and configure a long-lived production host, replace the Vercel-specific release/deploy workflow, and publish the new backend endpoint; verify the public health endpoint and a session that remains connected beyond five minutes.
-- [ ] 3.3 Document endpoint migration and coordinate updates for coded-room consumers before retiring the old endpoint; verify each migrated consumer can create, share, auto-join, and refresh a room.
+- [ ] 3.1 Prototype Vercel Hobby WebSocket handling with two independent function instances using only first-party Vercel state services (Blob or Edge Config); verify atomic room-code admission, same-room join, ordered broadcasts, owner recovery, and reconnect behavior, and measure operations, bandwidth, and function usage for representative coded-game traffic. Stop the migration if Vercel's consistency semantics or free quotas cannot support every coded game; do not add a third-party service or weaken room continuity.
+- [ ] 3.2 Implement shared room ownership, seat leases, state snapshots, and ordered message routing behind the existing room/client contract; add tests for concurrent code creation, cross-instance join, disconnect grace, and state restoration after forced socket replacement.
+- [ ] 3.3 Remove Render-only Docker, Blueprint, and deploy-hook configuration; configure the Vercel Node/WebSocket entrypoint and GitHub production-branch deployment while preserving the stable Vercel endpoint; verify local Node 24 operation and a Vercel preview deployment.
+- [ ] 3.4 Add planned socket renewal around 240 seconds, automatic reconnect for earlier drops, and versioned snapshot recovery; verify two clients preserve the same room and game state through multiple renewals during a session longer than ten minutes.
+- [ ] 3.5 Document the free-tier limits, recoverable quota errors, endpoint settings, consumer migration steps, and exact source references; verify documented commands and links.
 
-## 4. Full verification
+## 4. Full verification and release gate
 
-- [x] 4.1 Run `npm ci`, `npm run typecheck`, `npm test`, and client package dry-run locally; verify all existing and new checks pass.
-- [ ] 4.2 Verify the health endpoint, five-minute session, private-room flow, and regression suite against the selected long-lived public endpoint.
+- [ ] 4.1 Run `npm ci`, `npm run typecheck`, `npm test`, and the client package dry-run after the shared-state and Vercel changes; verify existing game protocols and focused cross-instance tests pass.
+- [ ] 4.2 Against the public Vercel production alias, verify health, create/share/auto-join/refresh for every coded game, cross-instance room continuity through multiple planned renewals in a session longer than ten minutes, unexpected-drop recovery, and measured free-tier use; do not release if any check fails or requires a paid tier.

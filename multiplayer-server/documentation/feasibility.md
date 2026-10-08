@@ -47,3 +47,14 @@ The replacement VERCEL_TOKEN passed direct project authorization, CLI account ve
 Backend/client v0.1.0 was published and deployed by [Release run 36445588819](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/36445588819). The tagged deployment is dpl_BjHj2FL88CD6aT5aji7VZkPvDn1u. Its automated live drawing suite passed, including 12 clients and rejection of a thirteenth. The public tarball was installed with a clean npm ci in the frontend.
 
 Rollback was exercised: production moved back to dpl_6phkByJyyWPGcmFf8X6XxcEbzATW, then the released dpl_BjHj2FL88CD6aT5aji7VZkPvDn1u was promoted again. Both CLI operations completed successfully. The frontend's public gameplay verification runs against the restored release.
+
+## Vercel-only room-state feasibility — 2026-10-02
+
+The current provider constraint allows only GitHub and Vercel Hobby. Vercel's first-party shared-storage candidates do not meet the coded games' authoritative 20 Hz room-state requirement within published Hobby limits:
+
+- [Vercel Blob pricing and limits](https://vercel.com/docs/vercel-blob/usage-and-pricing) lists 2,000 advanced operations/month and 900 advanced operations/minute for Hobby, with 1 GB storage and 10 GB Blob Data Transfer. A single `put()` for each 20 Hz room snapshot would require 72,000 advanced operations per room-hour and 1,200/minute. It would exceed the monthly included operation count in 100 seconds and the per-minute limit immediately. Blob also has no realtime room-message subscription; overwrites may remain cached for up to 60 seconds unless reads bypass cache.
+- [Vercel Edge Config](https://vercel.com/docs/plans/hobby) includes 100 writes/month and is documented for read-often, rarely changed configuration. A 20 Hz snapshot stream would require 1.44 million writes/month for one continuously active room.
+- Vercel's [storage overview](https://vercel.com/docs/storage) places Postgres and KV in the Marketplace integrations. Those use third-party providers and are excluded by the user's GitHub/Vercel-only constraint.
+- GitHub is the source and release path, not a realtime room store. Repository writes do not provide the ordered, low-latency room message path needed to keep multiple Vercel instances in one live session.
+
+These are projections from the existing 50 ms room broadcast cadence in `multiplayer-server/src/{bomberman,gungeon,neon-breaker,ring-rivals,street-fighter}-room.ts` and published Vercel quotas, not live Blob or Edge Config measurements. No first-party Vercel state store was provisioned for this check. The first-party service quota alone rules out writing each authoritative snapshot through Blob, and neither Blob nor Edge Config provides the required realtime room bus. The OpenSpec cross-instance release gate remains unmet; do not ship a process-local substitute as if it preserved room continuity.

@@ -8,7 +8,7 @@ Rivello Multimedia Consulting (RMC), led by [Samuel Asher Rivello](https://www.s
 
 This repository provides the shared multiplayer service and has no standalone demo. Play the projects that use it:
 
-- [**Bomberman Clone**](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/) — private competitive bomb arena; multiplayer integration in development.
+- [**Bomberman Clone**](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/) — private competitive bomb arena with optional growing plants that block movement.
 - [**Dust Circuit Rally**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race four off-road trucks in a fixed-camera landscape circuit with solo, local and online modes.
 - [**Enter the Gungeon Clone**](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) — survive bullet waves together in private 1–4-player rooms with dodge rolls, upgrades and revives.
 - [**Garden Chat**](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) — wander a shared garden and chat with other visitors.
@@ -49,6 +49,10 @@ npm run dev
 
 Local Node execution defaults to port 2567; override `PORT`. The Render-compatible Docker image defaults to port 10000. Tests start their own server on 2678.
 Set `SERVER_URL` before `npm test` to run the same ownership, late-join, cleanup, fresh-reconnect, seat-reuse, and capacity checks against a live server. Live integration checks need an otherwise empty drawing session.
+
+For Bomberman Clone local development, run `npm run dev` from the sibling `babylon-lite-bomberman-clone` repository. Its launcher prepares an ignored checkout of this server's `v0.9.7` tag and starts two independent local processes: port 2567 for normal play and port 2568 for AI browser tests. It starts the game on Vite port 5173 and stops all three processes together. The game defaults to port 2567; `?server=VITE_LOCAL&serverTest=true` selects port 2568. Its browser scripts should set `BACKEND_URL=http://127.0.0.1:2568`.
+
+This development branch currently uses four-character private room codes. The Bomberman client pinned to `v0.9.7` requires six-character codes, so use the tagged release for its local multiplayer sessions. The launcher's temporary checkout leaves this working tree unchanged. `?server=VERCEL_ONLINE` selects the production backend; `serverTest=true` with that preset requires a separately configured Vercel test deployment and must not fall back to production.
 
 ### 🛠 Release Version
 

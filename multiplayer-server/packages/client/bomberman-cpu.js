@@ -13,6 +13,17 @@ export function cpuHazards(g){
  const hazards=new Map(),add=(cell,start,end)=>{const intervals=hazards.get(cell)||[];intervals.push([start,end]);hazards.set(cell,intervals);};
  const bombs=g.bombs.map(b=>{const projected=forecast(g,b);return{...projected,cells:rays(g,projected),at:projected.deadline-g.tick};});
  for(let pass=0;pass<bombs.length;pass++)for(const a of bombs)for(const b of bombs)if(a!==b&&a.cells.includes(cellAt(b.x,b.y)))b.at=Math.min(b.at,a.at);
+  if (g.chainReaction)
+    for (let pass = 0; pass < bombs.length; pass++) {
+      const counts = new Map();
+      for (const b of bombs) counts.set(b.at, (counts.get(b.at) || 0) + 1);
+      for (const b of bombs)
+        if (counts.get(b.at) >= 2)
+          b.cells = rays(g, { ...b, range: Math.max(g.width || WIDTH, g.height || HEIGHT) });
+      for (const a of bombs)
+        for (const b of bombs)
+          if (a !== b && a.cells.includes(cellAt(b.x, b.y))) b.at = Math.min(b.at, a.at);
+    }
  for(const b of bombs)for(const cell of b.cells)add(cell,b.at,b.at+30);
  for(const b of g.blasts)for(const cell of b.cells)add(cell,0,b.until-g.tick);
  for(const warning of g.warnings||[])for(const cell of warning.cells)add(cell,warning.closeTick-g.tick,Infinity);

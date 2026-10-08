@@ -2,72 +2,69 @@
 
 ## Context
 
-The server currently serializes room admission in `multiplayer-server/src/server.ts`, but code generation and lookup are split between the general code-room path and Street Fighter's token map. Bomberman and Ring Rivals keep a dropped seat for 15 seconds; Street Fighter keeps a token-bound seat for 15 seconds; Gungeon removes a dropped player and retains its room only while Colyseus keeps the room alive. The shared client stores room options in memory and exposes `state.code`, but consumers currently implement URL parsing and UI themselves. Production runs through a Vercel serverless adapter with a 300-second function limit, while room state is in memory.
-
-See `proposal.md` for motivation and the spec deltas for observable requirements.
+The repository already contains a thin Vercel entrypoint and a Colyseus `Server.serverless()` export. The newly added room lifecycle, code index, rate limiter, and matchmaking queue are process-local, so they do not by themselves support multiple Vercel Function instances. Vercel's WebSocket Functions are currently public beta on all plans; each connection is pinned to one instance, new connections may reach another instance, and Hobby closes a connection at 300 seconds. See [Vercel WebSocket behavior and limits](https://vercel.com/kb/guide/do-vercel-serverless-functions-support-websocket-connections) and [Hobby plan limits](https://vercel.com/docs/plans/hobby).
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Give new private rooms a consistent four-character code and support a code chosen in the room form.
-- Give consumers shared helpers and a documented pattern for creating, joining, copying, and auto-joining room links.
-- Allow a code holder to replace a disconnected seat with a fresh identity without changing connected players' state; keep that seat claimable for as long as any player remains connected.
-- Keep rooms available while a player is connected and for the existing 15-second recovery grace after an unconsented drop, including when the solo host refreshes.
-- Run one authoritative Node process on a long-lived host to avoid serverless duration limits and cross-instance room splits.
+- Keep source in the existing GitHub repository and deploy its production branch to the existing Vercel project on the free Hobby plan.
+- Use only the current free GitHub and Vercel accounts; do not add a Marketplace database, external realtime service, or other hosting provider.
+- Preserve the four-character create/join/link workflow and room state when a Vercel connection closes and reconnects, including reconnects handled by a different function instance.
+- Keep room codes active while a participant is connected, preserve state during reconnect, and expire empty rooms after the existing short grace period.
+- Keep all production dependencies within explicitly free quotas, without automatic paid overages.
+- Gate release on measured cross-instance correctness and quota usage; do not trade away predictable room behavior to claim free hosting works.
 
 **Non-Goals:**
 
-- Restoring in-memory game state after a process crash or deployment restart.
-- User accounts, permanent player identity, or storage for rooms after the empty-room grace expires.
-- Changing game simulations, round rules, capacity, or player-seat order.
-- Implementing each consumer game's bespoke **Play Online** screen in this server repository; the shared package documentation will specify that pattern and its integration points.
+- Promise an uninterrupted WebSocket longer than Vercel Hobby's 300-second maximum.
+- Claim a free plan has an uptime SLA, unlimited traffic, or durable disaster recovery.
+- Keep process-local Colyseus matchmaking as the sole source of room ownership on Vercel.
+- Introduce a paid Vercel, database, or realtime plan.
+- Introduce any third-party runtime, database, or realtime provider, even if that provider offers a free tier.
 
 ## Decisions
 
-### Normalize private-room admission in the existing server endpoint
+### Keep GitHub as source and deploy with Vercel Hobby
 
-Keep `POST /api/join/:game` and the existing `{ create, code }` request shape. For a create request, validate and reserve an optional requested code or generate one using cryptographic random bytes and an unbiased mapping to the 36-character alphabet. Keep the existing serialized admission queue so concurrent creates cannot claim the same code. Uniqueness is per game because the game route scopes lookup; creating a room with an occupied code returns a conflict instead of joining it. Private-room joins accept exactly four-character codes after migration.
+The existing GitHub repository remains the source of truth. The Vercel project imports the personal GitHub repository and builds the service from its production branch; preview deployments remain separate from production. Keep the existing stable Vercel project URL, restore Vercel deployment in the release workflow, and use the existing `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` credentials. Remove Render-only Docker and Blueprint deployment paths. Preserve `server.ts` as a thin adapter and use the Node runtime supported by the existing Colyseus `Server.serverless()` entrypoint.
 
-The endpoint remains the source of truth for whether a requested code is free. A client-side suggested code is not a reservation: if another player claims it first, creation returns a specific conflict and the UI lets the user edit or regenerate it. Rate-limit repeated code lookups per source to reduce enumeration of the 36^4 code space. Keep this limiter in process memory alongside the current single-process matchmaking model.
+### Renew sockets before the Hobby limit
 
-### Add browser-safe room-link helpers without changing the existing client API
+Vercel Hobby permits WebSocket connections but limits each Function connection to 300 seconds. Treat that as a normal renewal interval: after each connection is accepted, the server tells the client when to renew; target renewal at about 240 seconds, with a small randomized delay so players do not all reconnect at once. The client opens a replacement connection, rejoins through the room code, fetches an authoritative versioned snapshot, and resumes before closing the old socket where the transport permits. Keep the existing short disconnected-seat grace for the handoff. If Vercel, a deployment, or a network closes a socket sooner, use the same automatic recovery path. The acceptance criterion is a continuous **room session** across planned and unexpected socket replacements, not one uninterrupted TCP/WebSocket connection.
 
-Add shared helpers to generate a suggested code, read the `room` query parameter, and build a room URL while preserving existing query parameters such as `mode=online`. The helper accepts a URL string so tests and non-browser consumers do not need a global `window`. Keep `MultiplayerClient(endpoint, game, options)` and `state.code`; an updated consumer reads `room` before choosing its initial screen, connects immediately when a code is present, and otherwise presents **Play Online** followed by the code field and **Join Room** / **Create Room** actions. After successful creation, the consumer uses the returned `state.code` to create the copyable URL.
+### Keep room authority within first-party Vercel services
 
-This keeps room-link behavior in the shared client contract while leaving game-specific rendering and launch behavior with each consumer. The package documentation and root feature catalog will link directly to these helpers and the server admission path.
+Each connection can land on a different Function instance, so in-memory room metadata, seat reservations, simulation state, and broadcasts cannot be authoritative. The user constraint permits only GitHub and Vercel. Evaluate Vercel Blob and Edge Config as the only first-party shared-state candidates; do not add a Vercel Marketplace database or an external provider.
 
-### Reclaim offline seats with a new identity
+Vercel Blob supports conditional writes with ETags, but Hobby includes 2,000 advanced operations per month and allows 900 advanced operations per minute. One 20 Hz snapshot write per active room would require 72,000 writes per room-hour and 1,200 per minute, exceeding both published limits. Blob is object storage rather than a realtime message bus. Overwritten blobs may be cached for up to 60 seconds unless a cache-bypassing read is used. Edge Config is optimized for frequently read, rarely changed configuration and Hobby includes 100 writes per month. Neither is assumed to support authoritative room traffic; task 3.1 must verify any Vercel-only design against actual semantics and quotas.
 
-Keep current 15-second same-identity SDK recovery for a dropped connection where the same client instance retries automatically. A distinct code-based join may replace that client's disconnected reservation with a fresh identity; keep the vacant seat claimable by code while another player remains connected, even after automatic recovery expires. Never replace a connected seat. Keep each game's existing state machine in its room class; the shared admission path only chooses the room and clears the inactive reservation through a room-level operation.
+Do not use GitHub APIs or repository commits as a runtime room store. They are the source and release path, not the ordered low-latency data plane. If no first-party Vercel design safely supports code uniqueness, active leases, cross-instance ordered state, and recovery within free quotas, stop the hosting migration and document the conflict. Do not substitute per-instance rooms or weaken the continuity requirement.
 
-Use a 15-second empty-room grace so a solo host can refresh and rejoin from the URL. If someone reconnects during the grace, cancel disposal. An explicit leave by the last player or expiry of the empty-room grace disposes the room. A process loss still clears room state and returns the normal expired/unavailable result.
+### Keep the existing client API and add resumable snapshots
 
-### Run one long-lived authoritative Node process on Render
+Keep `MultiplayerClient(endpoint, game, options)`, current room keys, and the four-character code helpers. Add only the transport/resume behavior needed to reconnect a dropped socket, rejoin using the same code, request the newest versioned snapshot, and reject stale or reordered commands. Keep game-specific simulations isolated. The endpoint should return a clear expired/unavailable result when the room lease or shared state is gone.
 
-Package the existing Node 24 server as a Render Docker web service. The checked-in Blueprint selects one Frankfurt instance on the always-on `0.5c-512mb` plan, turns off automatic deployment, and uses the container health endpoint. Run one service instance because `matchMaker` metadata, invite indexes, rate limits, and room state are process-local. Do not add multi-instance routing or shared persistence in this change. The release workflow deploys through a GitHub Actions deploy-hook secret and verifies the service URL stored as a repository variable; both values must be configured after the Render service is provisioned.
+### Deploy from GitHub and verify the production alias
 
-The existing backend hostname is Vercel-owned and cannot itself become a long-lived process. The migration must publish a stable endpoint for the new host and update the consumers that use the old endpoint before retiring it. The public client tarball name and constructor API remain unchanged.
+Vercel's Git integration performs deployment from GitHub. Retain the repository's Vercel token/org/project settings only for checked-in verification/release automation; do not introduce a paid host or an alternate deployment source. Verify health, all coded-room admission paths, forced socket replacement after 300 seconds, cross-instance resume, and measured free-tier consumption before marking the hosting tasks complete.
 
 ## Risks / Trade-offs
 
-- **Four-character codes are guessable** → Apply per-source request throttling and return retryable responses; codes remain room invitations, not user authentication.
-- **Two clients can race for a suggested code** → Serialize create checks and report code-in-use without silently joining another room.
-- **A code-based rejoin replaces an offline reservation** → Require possession of the room code, preserve connected seats, and invalidate the replaced identity/token.
-- **The service is single-instance and process-scoped** → This removes current function timeouts and split room indexes but does not survive process loss; surface room-unavailable feedback and let players create a new room.
-- **Changing the server hostname requires coordinated consumer updates** → Keep the old endpoint active during migration, update all coded-room consumers to the new endpoint, run public integration checks, then retire Vercel deployment.
-- **Host vendor and production credentials are not known in the repository** → Resolve provider and endpoint before enabling the deployment job; local packaging and service checks remain host-independent.
+- **WebSocket support is public beta** → Keep the production migration gated and test the actual Colyseus entrypoint and deployed project, not just a local WebSocket server.
+- **Function instances do not share memory or guaranteed room affinity** → Make shared state and ordering part of the room authority; reject or block rollout if a second instance can fork a room.
+- **Hobby sockets close after 300 seconds** → Renew around 240 seconds, restore the same logical room, and use automatic reconnect for earlier drops. A brief reconnect state is expected; losing room state is not an acceptable recovery result.
+- **Vercel's first-party storage quotas or consistency may not support realtime room state** → Measure Vercel usage and test conditional writes, reads, ordering, and recovery. If the free limits or semantics fail, keep the release gate closed; do not add a third-party store or silently upgrade.
+- **The free configuration has no availability SLA** → Describe the deployment as best effort and surface service/room unavailability honestly. The feature must still meet the tested stability contract during normal service operation.
+- **The Vercel project may pause or throttle at Hobby limits** → Include quota-exhaustion and cold-start checks in verification and retain rollback to the last working Vercel deployment.
 
 ## Migration Plan
 
-1. Add and verify the shared room-code/link helpers, admission changes, and room-lifecycle tests locally.
-2. Build a Node 24 container/runtime configuration and verify health and WebSocket admission on a single process.
-3. Select/configure a long-lived host, deploy a candidate endpoint, and run the private-room and full regression suites against it.
-4. Release the shared client and update coded-room consumers to use the candidate endpoint and common link flow.
-5. Retire the Vercel serverless deployment only after consumers use the new endpoint.
+1. Keep the currently deployed Vercel service available while preparing changes in GitHub.
+2. Prototype the shared-state adapter with two independent function instances and verify unique create, same-room join, concurrent admission, replacement-seat recovery, and ordered state broadcast.
+3. Measure all four coded games under representative play against the candidate store's free limits. If the free limits are insufficient, stop before production migration and report the conflict with the free-only requirement.
+4. Implement planned socket renewal around 240 seconds, automatic reconnect for earlier drops, and versioned snapshot resume; verify a session across repeated renewals lasting more than ten minutes.
+5. Deploy from the production GitHub branch to the existing Vercel project, verify its health and public game flows, then migrate consumers while keeping the same stable server URL.
+6. Release the shared client and backend together only after the cross-instance and free-quota gates pass.
 
-Rollback sends consumers back to the previous client version and endpoint. Rooms created during the migration are in-memory and will end when the host process is switched; the UI must report that the room expired so players can create another.
-
-## Open Questions
-
-- The Render service's generated `onrender.com` URL and deploy-hook URL are operational setup inputs. Record them in GitHub Actions as `RENDER_SERVICE_URL` and `RENDER_DEPLOY_HOOK_URL`; do not commit the deploy hook.
+Rollback switches the Vercel project back to the prior deployment. Shared room data uses an explicit schema version and TTL; a rollback that cannot read the current schema returns a clear room-unavailable response and lets players create a new room.

@@ -35,6 +35,8 @@ The shared client contract SHALL use a `room` URL query parameter for a private-
 ### Requirement: Room-code rejoin can replace a disconnected seat
 When a valid room code is used to join a room with a disconnected seat, the service SHALL admit a fresh identity by releasing or replacing that seat, while preserving connected players and their room state. A disconnected seat SHALL remain claimable by code for as long as at least one player remains connected to the room; the 15-second automatic recovery window SHALL NOT shorten this room-code availability.
 
+Room ownership and game state SHALL remain available across function-instance changes and WebSocket replacement on the selected free hosting plan. A process-local matchmaker or in-memory code map alone does not satisfy this requirement.
+
 #### Scenario: Rejoin while another player remains connected
 - **WHEN** a player reconnects by room code while another player remains connected
 - **THEN** the joining player receives a fresh identity in the same room and connected players retain their current state
@@ -46,6 +48,10 @@ When a valid room code is used to join a room with a disconnected seat, the serv
 #### Scenario: Reclaim a solo room after refresh
 - **WHEN** the only player disconnects during a refresh and rejoins by code within the disconnect grace period
 - **THEN** the same room remains available and admits the player with a fresh identity
+
+#### Scenario: Reconnect after a hosting function is replaced
+- **WHEN** a player's Vercel WebSocket closes at its maximum duration while another player remains in the room
+- **THEN** the player rejoins by the same code and resumes the authoritative room state even if the new connection reaches a different function instance
 
 #### Scenario: Connected capacity is full
 - **WHEN** all seats are occupied by connected players and another player uses the code

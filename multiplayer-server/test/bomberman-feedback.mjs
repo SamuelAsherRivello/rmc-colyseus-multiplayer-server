@@ -18,3 +18,16 @@ test('CPU opponents generate real authoritative explosions',()=>{
  const s=new BombermanSimulation();s.add('host');s.ready('host');s.step();for(let n=0;n<180;n++)s.step();assert.equal(s.phase,'playing');
  let explosions=0;for(let n=0;n<1000&&s.phase==='playing';n++){s.step();explosions+=s.game.events.filter(e=>e.type==='explosion').length;}assert.ok(explosions>0);
 });
+
+test('host can enable Chain Reaction for the next match', () => {
+  const s = new BombermanSimulation();
+  s.add('host');
+  assert.equal(s.options.chainReaction, false);
+  assert.equal(s.configure('guest', { chainReaction: true }), false);
+  assert.equal(s.configure('host', { chainReaction: 'yes' }), false);
+  assert.equal(s.configure('host', { chainReaction: true }), true);
+  s.ready('host');
+  s.step();
+  assert.equal(s.game.chainReaction, true);
+  assert.equal(s.snapshot().options.chainReaction, true);
+});

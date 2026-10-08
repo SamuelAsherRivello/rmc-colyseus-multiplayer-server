@@ -26,7 +26,7 @@ export function suddenDeathWaves(board, width=WIDTH, height=HEIGHT) {
   return waves.map((wave,n)=>({...wave,warnTick:5400+n*interval,closeTick:5460+n*interval}));
 }
 
-export function createGame(ids = ['practice'], seed = 1, mapSize='LOW', plant=false) {
+export function createGame(ids = ['practice'], seed = 1, mapSize='LOW', plant=false, chainReaction=false) {
   const [WIDTH,HEIGHT]=MAP_SIZES[mapSize]||MAP_SIZES.LOW,index=(x,y)=>y*WIDTH+x;
   const corners=[[1,1],[WIDTH-2,HEIGHT-2],[WIDTH-2,1],[1,HEIGHT-2]];
   const mirroredCells=(x,y)=>[...new Set([index(x,y),index(WIDTH-1-x,y),index(x,HEIGHT-1-y),index(WIDTH-1-x,HEIGHT-1-y)])];
@@ -61,7 +61,7 @@ export function createGame(ids = ['practice'], seed = 1, mapSize='LOW', plant=fa
     available.push(index(x, y));
   }
   const plants=plant?[available[Math.floor(random()*available.length)]]:[];
-  return { width:WIDTH,height:HEIGHT,mapSize,plantEnabled:plant,plants,nextPlantTick:300,time: 0, tick: 0, board, bombs: [], blasts: [], nextBomb: 1, paused: false,
+  return { width:WIDTH,height:HEIGHT,mapSize,plantEnabled:plant,...(chainReaction ? {chainReaction:true} : {}),plants,nextPlantTick:300,time: 0, tick: 0, board, bombs: [], blasts: [], nextBomb: 1, paused: false,
     hidden, pendingPowerups: [], powerups: [], warnings: [], closed: [], waves: suddenDeathWaves(board,WIDTH,HEIGHT),
     players: ids.map((id, n) => ({ id, x: corners[n][0] + .5, y: corners[n][1] + .5, alive: true, capacity: 1, range: 2, speed: 3, speedLevel: 0,glove:false,shieldUntil:0 })), events: [] };
 }
@@ -72,7 +72,7 @@ function blocked(g, p, x, y) {
     const tx = Math.floor(x + dx), ty = Math.floor(y + dy);
     const cell=index(tx,ty),shielded=g.tick<(p.shieldUntil||0);
     const leavingClosed=shielded&&(g.closed||[]).includes(cell)&&[-.28,.28].some(dx=>[-.28,.28].some(dy=>index(Math.floor(p.x+dx),Math.floor(p.y+dy))===cell));
-    if (tx < 0 || ty < 0 || tx >= WIDTH || ty >= HEIGHT || (g.board[cell]&&!leavingClosed)) return true;
+    if (tx < 0 || ty < 0 || tx >= WIDTH || ty >= HEIGHT || (g.board[cell]&&!leavingClosed) || g.plants.includes(cell)) return true;
     if (g.bombs.some(b => b.x === tx && b.y === ty && !b.pass.includes(p.id))) return true;
   }
   return false;
@@ -81,7 +81,7 @@ function blocked(g, p, x, y) {
 export function placeBomb(g, p) {
   if (!p?.alive || g.bombs.filter(b => b.owner === p.id).length >= p.capacity) return false;
   const [x, y] = tile(p);
-  if (g.board[index(x, y,g.width||15)] || g.bombs.some(b => b.x === x && b.y === y)) return false;
+  if (g.board[index(x, y,g.width||15)] || g.plants?.includes(index(x, y,g.width||15)) || g.bombs.some(b => b.x === x && b.y === y)) return false;
   g.bombs.push({ id: g.nextBomb++, owner: p.id, x, y, range: p.range, deadline: g.tick + 150,
     pass: g.players.filter(q => Math.abs(q.x - x - .5) < .78 && Math.abs(q.y - y - .5) < .78).map(q => q.id) });
   return true;
@@ -104,7 +104,7 @@ export function stepGame(g, inputs = {}) {
     if (!p.alive) continue;
     const input = inputs[p.id] || {};
     let dx = Math.sign(Number(input.x) || 0), dy = Math.sign(Number(input.y) || 0);
-    const tx=Math.floor(p.x),ty=Math.floor(p.y),solid=(x,y)=>Boolean(g.board[index(x,y)])||(!p.glove&&g.bombs.some(b=>b.x===x&&b.y===y&&!b.pass.includes(p.id)));
+    const tx=Math.floor(p.x),ty=Math.floor(p.y),solid=(x,y)=>Boolean(g.board[index(x,y)])||g.plants.includes(index(x,y))||(!p.glove&&g.bombs.some(b=>b.x===x&&b.y===y&&!b.pass.includes(p.id)));
     // Keep the small collider for forgiving turns, but don't let it create
     // sideways wiggle inside a corridor bounded on both sides.
     if(solid(tx-1,ty)&&solid(tx+1,ty))dx=0;
@@ -127,7 +127,7 @@ export function stepGame(g, inputs = {}) {
       b.sliding=null;b.deadline=g.tick;
     }else{b.slideX=nx;b.slideY=ny;b.x=Math.floor(nx);b.y=Math.floor(ny);}
   }
-  if(g.plantEnabled&&g.tick>=g.nextPlantTick){const grown=new Set(g.plants);for(const cell of g.plants){const x=cell%WIDTH,y=Math.floor(cell/WIDTH);for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const next=index(x+dx,y+dy);if(x+dx>0&&x+dx<WIDTH-1&&y+dy>0&&y+dy<HEIGHT-1&&!g.board[next]&&!g.bombs.some(b=>b.x===x+dx&&b.y===y+dy)&&!dangerous(next))grown.add(next);}}g.plants=[...grown];g.nextPlantTick=g.tick+300;g.powerups=g.powerups.filter(item=>!grown.has(item.cell));}
+  if(g.plantEnabled&&g.tick>=g.nextPlantTick){const grown=new Set(g.plants);for(const cell of g.plants){const x=cell%WIDTH,y=Math.floor(cell/WIDTH);for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const next=index(x+dx,y+dy);if(x+dx>0&&x+dx<WIDTH-1&&y+dy>0&&y+dy<HEIGHT-1&&!g.board[next]&&!g.bombs.some(b=>b.x===x+dx&&b.y===y+dy)&&!g.players.some(p=>p.alive&&[-.28,.28].some(ox=>[-.28,.28].some(oy=>index(Math.floor(p.x+ox),Math.floor(p.y+oy))===next)))&&!dangerous(next))grown.add(next);}}g.plants=[...grown];g.nextPlantTick=g.tick+300;g.powerups=g.powerups.filter(item=>!grown.has(item.cell));}
   g.warnings = (g.waves || []).filter(w => w.warnTick <= g.tick && w.closeTick > g.tick);
   const closing = new Set((g.waves || []).filter(w => w.closeTick === g.tick).flatMap(w => w.cells));
   if (closing.size) {
@@ -141,24 +141,69 @@ export function stepGame(g, inputs = {}) {
       p.alive = false;p.glove=false; g.events.push({ type: 'elimination', player: p.id, cause: 'wall' });
     }
   }
-  const queue = g.bombs.filter(b => !b.sliding&&b.deadline <= g.tick), detonated = new Set(), geometry = [...g.board], destroyed = new Set(),plantGeometry=new Set(g.plants),cutPlants=new Set();
+  const queue = g.bombs.filter((b) => !b.sliding && b.deadline <= g.tick),
+    detonated = new Map(),
+    geometry = [...g.board],
+    destroyed = new Set(),
+    plantGeometry = new Set(g.plants),
+    cutPlants = new Set();
+  const trace = (bomb, fullRange) => {
+    const cells = [index(bomb.x, bomb.y)],
+      triggered = [],
+      blocks = new Set(),
+      plants = new Set();
+    if (plantGeometry.has(cells[0])) plants.add(cells[0]);
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ])
+      for (let n = 1; n <= (fullRange ? Math.max(WIDTH, HEIGHT) : bomb.range); n++) {
+        const x = bomb.x + dx * n,
+          y = bomb.y + dy * n;
+        if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) break;
+        const i = index(x, y);
+        if (geometry[i] === 1) break;
+        cells.push(i);
+        const other = g.bombs.find((b) => b.x === x && b.y === y);
+        if (other) triggered.push(other);
+        if (plantGeometry.has(i)) {
+          plants.add(i);
+          break;
+        }
+        if (geometry[i] === 2) {
+          blocks.add(i);
+          break;
+        }
+      }
+    return { cells, triggered, blocks, plants };
+  };
   while (queue.length) {
     const bomb = queue.shift();
     if (detonated.has(bomb.id)) continue;
-    detonated.add(bomb.id);
-    const cells = [index(bomb.x, bomb.y)];
-    if(plantGeometry.has(cells[0]))cutPlants.add(cells[0]);
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) for (let n = 1; n <= bomb.range; n++) {
-      const x = bomb.x + dx * n, y = bomb.y + dy * n;
-      if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) break;
-      const i = index(x, y);
-      if (geometry[i] === 1) break;
-      cells.push(i);
-      const other = g.bombs.find(b => b.x === x && b.y === y);
-      if (other) queue.push(other);
-      if(plantGeometry.has(i)){cutPlants.add(i);break;}
-      if (geometry[i] === 2) { destroyed.add(i); break; }
+    detonated.set(bomb.id, bomb);
+    queue.push(...trace(bomb, false).triggered);
+  }
+  if (g.chainReaction && detonated.size >= 2) {
+    // An extended ray can reach another bomb, so expand until no new bombs join this tick.
+    const expanded = new Set();
+    const pending = [...detonated.values()];
+    while (pending.length) {
+      const bomb = pending.shift();
+      if (expanded.has(bomb.id)) continue;
+      expanded.add(bomb.id);
+      for (const other of trace(bomb, true).triggered)
+        if (!detonated.has(other.id)) {
+          detonated.set(other.id, other);
+          pending.push(other);
+        }
     }
+  }
+  for (const bomb of detonated.values()) {
+    const { cells, blocks, plants } = trace(bomb, g.chainReaction && detonated.size >= 2);
+    for (const cell of blocks) destroyed.add(cell);
+    for (const cell of plants) cutPlants.add(cell);
     g.blasts.push({ id: bomb.id, cells, until: g.tick + 30 });
     g.events.push({ type: 'explosion', bomb: bomb.id, cells });
   }
@@ -169,7 +214,7 @@ export function stepGame(g, inputs = {}) {
   g.bombs = g.bombs.filter(b => !detonated.has(b.id));
   g.plants=g.plants.filter(cell=>!cutPlants.has(cell));
   for (const p of g.players) if (p.alive) {
-    const touched = [-.28, .28].some(dx => [-.28, .28].some(dy => {const cell=index(Math.floor(p.x+dx),Math.floor(p.y+dy));return g.blasts.some(b=>b.cells.includes(cell))||g.plants.includes(cell)||g.closed.includes(cell);}));
+    const touched = [-.28, .28].some(dx => [-.28, .28].some(dy => {const cell=index(Math.floor(p.x+dx),Math.floor(p.y+dy));return g.blasts.some(b=>b.cells.includes(cell))||g.closed.includes(cell);}));
     if (touched&&g.tick>=(p.shieldUntil||0)) { p.alive = false;p.glove=false; g.events.push({ type: 'elimination', player: p.id }); }
   }
   g.powerups = g.powerups.filter(item => !dangerous(item.cell));
