@@ -146,13 +146,20 @@ test('private room creation accepts custom codes, rejects collisions, normalizes
     assert.match(generated.state.code, /^[A-Z0-9]{4}$/);
     assert.notEqual(generated.state.code, host.state.code);
 
-    for (let attempt = 0; attempt < 30; attempt++) {
+    let attemptsBeforeLimit = 0;
+    let limited;
+    // A live proxy may count earlier joins from the runner's IP despite the supplied forwarded address.
+    for (let attempt = 0; attempt < 31; attempt++) {
       const response = await fetch(endpoint + '/api/join/gungeon', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '203.0.113.42' }, body: JSON.stringify({ code: 'ZZZZ' }) });
+      if (response.status === 429) { limited = response; break; }
       assert.equal(response.status, 404);
+      attemptsBeforeLimit++;
     }
-    const limited = await fetch(endpoint + '/api/join/gungeon', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '203.0.113.42' }, body: JSON.stringify({ code: 'ZZZZ' }) });
+    assert.ok(limited, 'repeated guesses are throttled');
+    if (!process.env.SERVER_URL) assert.equal(attemptsBeforeLimit, 30, 'a fresh local source gets exactly 30 attempts');
     assert.equal(limited.status, 429);
     assert.equal(limited.headers.get('retry-after'), '60');
+    assert.equal((await limited.json()).errorCode, 'rate_limited');
   } finally {
     clients.forEach(client => client.disconnect());
     await delay(250);
