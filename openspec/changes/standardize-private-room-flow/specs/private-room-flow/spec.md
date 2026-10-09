@@ -6,12 +6,16 @@ Defines a consistent private-room code, link, and recovery flow that game client
 
 ## ADDED Requirements
 
-### Requirement: New private rooms use four-character codes
-The service SHALL create private rooms with a unique four-character uppercase code drawn from `A-Z` and `0-9`, and SHALL allow clients to request a specific valid code when creating a room.
+### Requirement: New private rooms use compatible codes
+The service SHALL create private rooms with unique uppercase codes drawn from `A-Z` and `0-9`. Gungeon, Ring Rivals, and Street Fighter SHALL use four characters. Bomberman SHALL generate six characters for the published client and SHALL accept either four- or six-character requested and join codes for compatibility.
 
 #### Scenario: Create with a suggested code
 - **WHEN** a client requests creation with an unused four-character code
 - **THEN** the service creates a private room using that code and returns it with the join reservation
+
+#### Scenario: Published Bomberman client creates a room
+- **WHEN** the published Bomberman client creates a room without a requested code
+- **THEN** the service returns a six-character code that its six-character invite field can share and join
 
 #### Scenario: Requested code is already in use
 - **WHEN** a client requests creation with a code already assigned to an active room for that game
@@ -35,7 +39,7 @@ The shared client contract SHALL use a `room` URL query parameter for a private-
 ### Requirement: Room-code rejoin can replace a disconnected seat
 When a valid room code is used to join a room with a disconnected seat, the service SHALL admit a fresh identity by releasing or replacing that seat, while preserving connected players and their room state. A disconnected seat SHALL remain claimable by code for as long as at least one player remains connected to the room; the 15-second automatic recovery window SHALL NOT shorten this room-code availability.
 
-Room ownership and game state SHALL remain available across function-instance changes and WebSocket replacement on the selected free hosting plan. A process-local matchmaker or in-memory code map alone does not satisfy this requirement.
+For the bounded process-local release, this guarantee applies while the owning Function remains available. Function replacement or a rejoin routed to another instance can end the room; cross-instance continuity requires a separate future shared-state migration.
 
 #### Scenario: Rejoin while another player remains connected
 - **WHEN** a player reconnects by room code while another player remains connected
@@ -49,9 +53,9 @@ Room ownership and game state SHALL remain available across function-instance ch
 - **WHEN** the only player disconnects during a refresh and rejoins by code within the disconnect grace period
 - **THEN** the same room remains available and admits the player with a fresh identity
 
-#### Scenario: Reconnect after a hosting function is replaced
-- **WHEN** a player's Vercel WebSocket closes at its maximum duration while another player remains in the room
-- **THEN** the player rejoins by the same code and resumes the authoritative room state even if the new connection reaches a different function instance
+#### Scenario: Reconnect reaches another hosting instance
+- **WHEN** a player's Vercel WebSocket closes and a later code join reaches an instance without the original room
+- **THEN** the current release may report that the room is unavailable; it does not claim to restore the earlier game state
 
 #### Scenario: Connected capacity is full
 - **WHEN** all seats are occupied by connected players and another player uses the code

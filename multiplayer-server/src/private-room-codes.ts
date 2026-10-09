@@ -2,18 +2,21 @@ import { randomInt } from "node:crypto";
 
 export const PRIVATE_ROOM_CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 export const PRIVATE_ROOM_CODE_LENGTH = 4;
-const PRIVATE_ROOM_CODE_PATTERN = /^[A-Z0-9]{4}$/;
+export const BOMBERMAN_ROOM_CODE_LENGTH = 6;
 
-export function normalizePrivateRoomCode(value: unknown): string | undefined {
+export function normalizePrivateRoomCode(value: unknown, lengths: readonly number[] = [PRIVATE_ROOM_CODE_LENGTH]): string | undefined {
   if (typeof value !== "string") return undefined;
   const code = value.trim().toUpperCase();
-  return PRIVATE_ROOM_CODE_PATTERN.test(code) ? code : undefined;
+  return lengths.includes(code.length) && /^[A-Z0-9]+$/.test(code) ? code : undefined;
 }
 
-export function generatePrivateRoomCode(isTaken: (code: string) => boolean): string {
+export function generatePrivateRoomCode(isTaken: (code: string) => boolean, length = PRIVATE_ROOM_CODE_LENGTH): string {
+  if (length !== PRIVATE_ROOM_CODE_LENGTH && length !== BOMBERMAN_ROOM_CODE_LENGTH) {
+    throw new Error("Unsupported private room code length");
+  }
   for (let attempt = 0; attempt < 100; attempt++) {
     let code = "";
-    for (let index = 0; index < PRIVATE_ROOM_CODE_LENGTH; index++) {
+    for (let index = 0; index < length; index++) {
       code += PRIVATE_ROOM_CODE_ALPHABET[randomInt(PRIVATE_ROOM_CODE_ALPHABET.length)];
     }
     if (!isTaken(code)) return code;

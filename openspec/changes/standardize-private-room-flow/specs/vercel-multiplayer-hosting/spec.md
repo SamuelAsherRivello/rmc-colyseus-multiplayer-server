@@ -2,60 +2,56 @@
 
 ## Purpose
 
-Defines a free-only Vercel deployment whose WebSocket connections may be short-lived while its logical multiplayer rooms remain resumable across function instances.
+Defines a bounded, free-only Vercel release for the current process-local server. Cross-instance room continuity is a separate future migration and is not a claim of this release.
 
 ## ADDED Requirements
 
-### Requirement: Production source is deployed from GitHub to Vercel Hobby
-The production server SHALL be built from the project's GitHub repository and run on Vercel Hobby without requiring a paid host or paid data tier.
+### Requirement: Production source is deployed from GitHub to the stable Vercel Hobby alias
+The production server SHALL be built from the project's verified GitHub `main` commit, run on the existing Vercel Hobby project, and serve the existing stable URL without requiring a paid host or data tier.
 
-#### Scenario: Production branch is updated
-- **WHEN** a verified change is merged to the production branch
-- **THEN** Vercel builds and deploys that GitHub revision to the stable production alias
+#### Scenario: A verified version is released
+- **WHEN** the staged deployment passes the release checks and is promoted
+- **THEN** `https://rmc-colyseus-multiplayer-server.vercel.app/api/health` reports the new version and existing consumers can continue using that same server URL
 
 ### Requirement: Hosting uses only the user's free GitHub and Vercel services
-The production architecture SHALL use only the user's current free GitHub access and Vercel Hobby account, including first-party Vercel services, and SHALL NOT depend on a third-party host, database, or realtime provider.
+The bounded production release SHALL use only the user's current free GitHub access and Vercel Hobby account. It SHALL NOT add a third-party host, database, realtime provider, paid tier, or automatic overages.
 
 #### Scenario: A design requires an external provider
-- **WHEN** cross-instance room consistency depends on a third-party runtime, database, or realtime service
-- **THEN** the migration remains blocked and no such provider is added
+- **WHEN** a proposed deployment dependency requires a third-party service or paid capacity
+- **THEN** it is excluded from this release
 
-### Requirement: WebSockets renew before the Hobby duration limit
-The system SHALL treat Vercel Hobby's 300-second WebSocket maximum as a planned renewal interval. The client SHALL start renewal around 240 seconds after a connection is accepted, rejoin the same room code, and recover the latest authoritative game state before the platform limit. It SHALL also recover if the platform, a deployment, or the network closes a connection earlier.
+### Requirement: Current WebSocket sessions are verified within the Hobby duration limit
+The bounded release SHALL verify a live two-client relay session for 240 seconds, below Vercel Hobby's 300-second Function limit. It SHALL document that the current client does not provide planned renewal or guaranteed state recovery after the owning Function ends.
 
-#### Scenario: Planned socket renewal
-- **WHEN** a WebSocket has been open for about 240 seconds
-- **THEN** the client renews it, rejoins the same room, applies the newest authoritative snapshot, and keeps the shared room URL and game state
+#### Scenario: Two clients play within the verified window
+- **WHEN** two clients remain in a relay room for four minutes on the staged production deployment
+- **THEN** they stay in the same room and continue receiving server-mediated messages without a socket drop during that test
 
-#### Scenario: Platform closes a socket early
-- **WHEN** Vercel, a deployment, or a network closes a WebSocket before planned renewal
-- **THEN** the client automatically reconnects to the same room and recovers the latest authoritative game state
+#### Scenario: A Function ends or a reconnect reaches another instance
+- **WHEN** the owning Function ends or a room-code request reaches another instance
+- **THEN** the service is permitted to lose that process-local room; the release documentation does not promise the same room or state across that boundary
 
-#### Scenario: A play session lasts longer than five minutes
-- **WHEN** two players remain in a match for more than ten minutes
-- **THEN** planned socket renewals complete without changing rooms, losing authoritative state, or requiring either player to reload the page
+### Requirement: Current room authority is described accurately
+Room-code ownership, admission, seat reservations, game state, and broadcasts SHALL be described as process-local for this release. Existing in-process room-code recovery and game-specific SDK reconnection SHALL remain compatible, but cross-instance uniqueness and recovery SHALL NOT be claimed.
 
-### Requirement: Room authority is shared across Vercel instances
-Room-code ownership, admission, seat reservations, authoritative game state, and ordered room messages SHALL use a shared coordination path so a connection handled by another function instance joins the same logical room.
+#### Scenario: A code exists only on another instance
+- **WHEN** a join request is handled by an instance without that room
+- **THEN** the service may return its existing room-unavailable or not-found response and does not create a duplicate room as a side effect of that join
 
-#### Scenario: A rejoin reaches a different function instance
-- **WHEN** a player joins or reconnects to a room code on a function instance other than the one that handled the previous connection
-- **THEN** the player reaches the same room state and no duplicate room or conflicting seat is created
+### Requirement: Bounded release passes local, staged, and alias checks
+The workflow SHALL run Node 24 clean install, documentation check, typecheck, the full test suite, and client packaging. It SHALL stage the versioned production build without moving the stable URL, verify staged health, every registered game's live-capable tests, and a 240-second two-client relay, then promote that exact build. It SHALL verify the stable URL's exact version and two-client relay before publishing one GitHub tag, release, and unchanged client tarball name.
 
-#### Scenario: Concurrent creates request the same code
-- **WHEN** separate function instances concurrently create a room with the same code
-- **THEN** exactly one request succeeds and the other receives a code-in-use response
+#### Scenario: A staged check fails
+- **WHEN** health, a game integration, packaging, or the four-minute relay fails before promotion
+- **THEN** the stable URL remains on the previous deployment and no GitHub release is published
 
-### Requirement: Vercel resources stay within free quotas
-The production configuration SHALL use only the user's free GitHub and Vercel services, SHALL NOT enable paid overages or automatic upgrades, and SHALL provide a recoverable error when a Vercel free quota prevents admission or state updates.
+#### Scenario: Stable alias verification fails after promotion
+- **WHEN** the promoted stable URL does not serve the selected version or relay two clients
+- **THEN** the release is not published and the previous deployment is restored before calling the rollout successful
 
-#### Scenario: A free-tier quota is reached
-- **WHEN** Vercel rejects work because a Hobby or first-party storage quota is exhausted
-- **THEN** the client receives a clear retryable service-unavailable result and the system does not incur a paid charge
+### Requirement: Future shared-state migration has its own gate
+Any later claim of cross-instance room continuity, planned renewal, or sessions longer than the Function limit SHALL require a separate implementation and tests for atomic code creation, cross-instance join and state recovery, ordered messages, and representative first-party free-tier usage. This future gate SHALL NOT be marked complete by the bounded release.
 
-### Requirement: Cross-instance behavior passes a release gate
-The production migration SHALL NOT be released until tests prove coded-room creation, cross-instance join, state recovery after a forced socket replacement, and representative free-tier resource use.
-
-#### Scenario: A cross-instance or quota test fails
-- **WHEN** any coded game forks room state across instances or exceeds the approved free-tier budget during representative play
-- **THEN** the migration remains blocked and the limitation is documented instead of marking hosting complete
+#### Scenario: Future cross-instance proof fails
+- **WHEN** a later shared-state design forks rooms or exceeds the approved free-tier budget
+- **THEN** that migration remains blocked without changing the bounded release's documented behavior

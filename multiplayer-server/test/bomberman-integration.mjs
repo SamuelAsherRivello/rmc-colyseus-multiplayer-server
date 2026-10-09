@@ -9,7 +9,7 @@ async function join(options){const c=new MultiplayerClient(endpoint,'bomberman',
 test('private Bomberman admission, authoritative bombs, isolation, capacity and same-identity reconnect',{timeout:90000},async()=>{
  let server;try{
   if(!process.env.SERVER_URL){server=spawn(process.execPath,['--import','tsx','server.ts'],{env:{...process.env,PORT:String(localPort)},stdio:'ignore',windowsHide:true});let ready=false;for(let i=0;i<100;i++){try{ready=(await fetch(endpoint+'/api/health')).ok;}catch{}if(ready)break;await delay(100);}assert.ok(ready);}
-  const a=await join({create:true}),code=a.state.code,b=await join({code});assert.match(code,/^[A-Z0-9]{4}$/);assert.equal(a.state.roomId,b.state.roomId);
+  const a=await join({create:true}),code=a.state.code,b=await join({code});assert.match(code,/^[A-Z0-9]{6}$/);assert.equal(a.state.roomId,b.state.roomId);
   const earlyId=a.state.sessionId;a.room.connection.close();await until(()=>a.state.status==='reconnecting','immediate drop observed');await until(()=>a.state.status==='connected'&&a.state.sessionId===earlyId,'recovery without minimum uptime');
   const c=await join({code}),d=await join({code});a.send('ready');await delay(150);assert.equal(b.state.gameState.phase,'lobby');for(const player of [b,c,d])player.send('ready');await until(()=>b.state.gameState.phase==='playing','countdown');
   const id=a.state.sessionId;for(const player of [a,c,d])player.send('input',{seq:1,x:0,y:0,bomb:true});await until(()=>b.state.gameState.bombs.length===3,'bomb sync');await until(()=>b.state.gameState.phase==='results','round result');assert.equal(b.state.gameState.winner,b.state.sessionId);

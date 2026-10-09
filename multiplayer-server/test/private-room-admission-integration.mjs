@@ -84,9 +84,10 @@ test('private room creation accepts custom codes, rejects collisions, normalizes
     await until(() => persistentPlayer('gungeon', refreshed)?.weapon === 'carbine', 'replacement retains Gungeon state');
     assert.deepEqual(persistentFields('gungeon', persistentPlayer('gungeon', refreshed)), beforeGungeonRejoin);
 
-    for (const [game, code] of [['bomberman', uniqueCode('B')], ['ring-rivals', uniqueCode('R')], ['street-fighter-ii', uniqueCode('F')]]) {
+    for (const [game, code] of [['bomberman', `${uniqueCode('B')}12`], ['ring-rivals', uniqueCode('R')], ['street-fighter-ii', uniqueCode('F')]]) {
       const first = await join(game, { create: true, code });
       assert.equal(first.state.status, 'connected', `${game} host: ${first.state.error}`);
+      if (game === 'bomberman') assert.match(first.state.code, /^[A-Z0-9]{6}$/, 'legacy Bomberman invite stays six characters');
       const second = await join(game, { code });
       assert.equal(second.state.status, 'connected', `${game} guest: ${second.state.error}`);
       await until(() => persistentPlayer(game, second) !== undefined, `${game} initial game state is present`);
@@ -114,6 +115,10 @@ test('private room creation accepts custom codes, rejects collisions, normalizes
       await until(() => persistentPlayer(game, replacement) !== undefined, `${game} replacement game state is present`);
       assert.deepEqual(persistentFields(game, persistentPlayer(game, replacement)), beforeRejoin, `${game} replacement preserves its seat state`);
     }
+
+    const fourCharacterBomberman = await join('bomberman', { create: true, code: uniqueCode('L') });
+    assert.equal(fourCharacterBomberman.state.status, 'connected', fourCharacterBomberman.state.error);
+    assert.match(fourCharacterBomberman.state.code, /^[A-Z0-9]{4}$/, 'recent four-character Bomberman callers stay accepted');
 
     const emptyCode = uniqueCode('E');
     const empty = await join('gungeon', { create: true, code: emptyCode });

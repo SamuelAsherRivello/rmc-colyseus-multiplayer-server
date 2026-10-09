@@ -10,6 +10,9 @@ test('private room codes normalize input and use four uppercase alphanumeric cha
   const code = generatePrivateRoomCode(candidate => candidate === 'AB9Z');
   assert.match(code, /^[A-Z0-9]{4}$/);
   assert.notEqual(code, 'AB9Z');
+  assert.equal(normalizePrivateRoomCode(' ab1234 ', [4, 6]), 'AB1234');
+  assert.equal(normalizePrivateRoomCode('AB1234'), undefined);
+  assert.match(generatePrivateRoomCode(() => false, 6), /^[A-Z0-9]{6}$/);
 });
 
 test('room code attempt limiter resets after its window', () => {

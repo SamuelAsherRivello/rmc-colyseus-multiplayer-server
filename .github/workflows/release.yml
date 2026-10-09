@@ -11,10 +11,10 @@ concurrency:
   group: backend-release
   cancel-in-progress: false
 jobs:
-  release:
+  prepare:
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.version.outputs.tag }}
+      commit: ${{ steps.commit.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,33 +25,93 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - run: npm run check:docs
       - run: npm run typecheck
       - run: npm test
+      - name: Require a new semantic version and unused release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          node --input-type=module <<'NODE'
+          import metadata from './package.json' with { type: 'json' };
+          const next = process.env.VERSION;
+          if (!/^\d+\.\d+\.\d+$/.test(next || '')) throw new Error('VERSION must be a semantic version');
+          const currentParts = metadata.version.split('.').map(Number);
+          const nextParts = next.split('.').map(Number);
+          if (nextParts.findIndex((value, index) => value !== currentParts[index]) < 0) throw new Error('Version is unchanged');
+          const newer = nextParts.findIndex((value, index) => value !== currentParts[index]);
+          if (nextParts[newer] < currentParts[newer]) throw new Error('Version must increase');
+          NODE
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "Tag v$VERSION already exists" >&2
+            exit 1
+          fi
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists" >&2
+            exit 1
+          fi
       - name: Set release version
-        id: version
         env:
           VERSION: ${{ inputs.version }}
         run: |
           node scripts/set-version.mjs
           npm install --package-lock-only --ignore-scripts
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-      - name: Package client
-        run: mkdir -p artifacts && npm pack ./multiplayer-server/packages/client --pack-destination artifacts
-      - name: Commit and publish release
+          npm pack ./multiplayer-server/packages/client --dry-run
+      - name: Push the versioned source for deployment
+        id: commit
         env:
-          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json multiplayer-server/packages/client/package.json
-          git diff --cached --quiet || git commit -m "Release v$VERSION"
-          git tag "v$VERSION"
-          git push origin HEAD:main "v$VERSION"
-          gh release create "v$VERSION" artifacts/*.tgz --title "v$VERSION" --generate-notes
+          if git diff --cached --quiet; then
+            echo "Version files did not change" >&2
+            exit 1
+          fi
+          git commit -m "Release v$VERSION"
+          git push origin HEAD:main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
   deploy:
-    needs: release
+    needs: prepare
     uses: ./.github/workflows/deploy.yml
     with:
-      ref: ${{ needs.release.outputs.tag }}
+      ref: ${{ needs.prepare.outputs.commit }}
     secrets: inherit
+  publish:
+    needs: [prepare, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Require the verified commit to remain current main
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch origin main --no-tags --depth=1
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          test "$(node -p "require('./package.json').version")" = "$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "Tag v$VERSION already exists" >&2
+            exit 1
+          fi
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists" >&2
+            exit 1
+          fi
+      - name: Publish one GitHub release from the verified deployment
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts
+          npm pack ./multiplayer-server/packages/client --pack-destination artifacts
+          gh release create "v$VERSION" artifacts/*.tgz --target "$(git rev-parse HEAD)" --title "v$VERSION" --generate-notes

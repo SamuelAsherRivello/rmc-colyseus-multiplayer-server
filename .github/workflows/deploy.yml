@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Release tag at the current main commit (for example v0.9.8)
+        description: Release commit or tag at the current main commit
         required: true
 permissions:
   contents: read
@@ -25,7 +25,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -46,43 +46,43 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - name: Build and deploy the tagged source to Vercel production
+      - name: Stage the selected source with production settings
         id: deploy
         run: |
           npm install --global vercel@62.2.0
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --token="$VERCEL_TOKEN"
-          deployment_url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          deployment_url="$(vercel deploy --prebuilt --prod --skip-domain --token="$VERCEL_TOKEN")"
           echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
-      - name: Verify public health endpoint serves the selected release
+      - name: Verify the staged deployment serves the selected version
         env:
-          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
-        run: |
-          node --input-type=module <<'NODE'
-          import metadata from './package.json' with { type: 'json' };
-          const base = process.env.DEPLOYMENT_URL.replace(/\/$/, '');
-          for (let attempt = 0; attempt < 60; attempt++) {
-            try {
-              const response = await fetch(`${base}/api/health?verify=${Date.now()}`, { signal: AbortSignal.timeout(10000) });
-              const health = await response.json();
-              if (response.ok && health.status === 'ok' && health.version === metadata.version) {
-                console.log('Public Vercel service verified:', health.version, health.games);
-                process.exit(0);
-              }
-            } catch {}
-            await new Promise(resolve => setTimeout(resolve, 5000));
-          }
-          throw new Error('Vercel service did not serve the selected release');
-          NODE
-      - name: Verify every registered game against the public service
+          SERVER_URL: ${{ steps.deploy.outputs.url }}
+        run: node scripts/verify-release-health.mjs
+      - name: Verify every registered game against the staged deployment
         run: npm test
         env:
           SERVER_URL: ${{ steps.deploy.outputs.url }}
-      - name: Verify a Vercel Hobby-compatible relay session
+      - name: Verify a Vercel Hobby-compatible four-minute relay session
         run: npm run verify:long-session
         env:
           SERVER_URL: ${{ steps.deploy.outputs.url }}
           LONG_SESSION_SECONDS: '240'
+      - name: Promote the verified deployment to the stable production URL
+        id: promote
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: vercel promote "$DEPLOYMENT_URL" --yes --token="$VERCEL_TOKEN"
+      - name: Verify the stable production URL serves the selected version
+        env:
+          SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
+        run: node scripts/verify-release-health.mjs
+      - name: Verify two clients relay through the stable production URL
+        env:
+          SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
+        run: npm run probe
+      - name: Restore the previous production deployment if public verification fails
+        if: ${{ failure() && steps.promote.outcome == 'success' }}
+        run: vercel rollback --token="$VERCEL_TOKEN"
 
 
 

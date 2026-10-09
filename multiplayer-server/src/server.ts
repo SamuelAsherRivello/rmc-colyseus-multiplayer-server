@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { Room, Server, ServerError, matchMaker, type Client } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
-import { generatePrivateRoomCode, normalizePrivateRoomCode, PrivateRoomCodeRateLimiter } from "./private-room-codes.js";
+import { BOMBERMAN_ROOM_CODE_LENGTH, generatePrivateRoomCode, normalizePrivateRoomCode, PrivateRoomCodeRateLimiter } from "./private-room-codes.js";
 import { BombermanRoom } from './bomberman-room.js';
 import { GungeonRoom } from "./gungeon-room.js";
 import { DrawingRoom } from "./drawing-room.js";
@@ -53,22 +53,25 @@ async function prepareRoomCodeRejoin(room: PrivateCodeRoom): Promise<string | un
 async function reserveDungeon(body:unknown, game = 'gungeon') {
   const data=body as {create?:boolean;code?:string};
   if(!data||typeof data!=='object')throw new AdmissionError(400,'Choose create or a room code');
+  const legacyBomberman = game === 'bomberman';
+  const acceptedLengths = legacyBomberman ? [4, BOMBERMAN_ROOM_CODE_LENGTH] : [4];
+  const codeError = legacyBomberman ? 'Enter a four- or six-character room code' : 'Enter a four-character room code';
   const pending=joining.catch(()=>undefined).then(async()=>{
     const rooms=await matchMaker.query({name:game});
     if(data.create===true){
       if(rooms.length>=50)throw new AdmissionError(503,'Too many rooms - try again later');
-      const requested = data.code === undefined ? undefined : normalizePrivateRoomCode(data.code);
-      if (data.code !== undefined && !requested) throw new AdmissionError(400,'Enter a four-character room code');
+      const requested = data.code === undefined ? undefined : normalizePrivateRoomCode(data.code, acceptedLengths);
+      if (data.code !== undefined && !requested) throw new AdmissionError(400,codeError);
       const isTaken = (code: string) => rooms.some(room => room.metadata?.code === code);
       if (requested && isTaken(requested)) throw new AdmissionError(409,'That room code is already in use. Choose another.', 'code_in_use');
       let code: string;
-      try { code = requested ?? generatePrivateRoomCode(isTaken); }
+      try { code = requested ?? generatePrivateRoomCode(isTaken, legacyBomberman ? BOMBERMAN_ROOM_CODE_LENGTH : 4); }
       catch { throw new AdmissionError(503,'Room codes are temporarily unavailable. Try again.'); }
       const room=await matchMaker.createRoom(game,{code});
       return {reservation:await matchMaker.joinById(room.roomId),code};
     }
-    const code = normalizePrivateRoomCode(data.code);
-    if(!code)throw new AdmissionError(400,'Enter a four-character room code');
+    const code = normalizePrivateRoomCode(data.code, acceptedLengths);
+    if(!code)throw new AdmissionError(400,codeError);
     const room=rooms.find(r=>r.metadata?.code===code);
     if(!room)throw new AdmissionError(404,'Room expired or code not found. Create a new room.');
     const privateRoom = matchMaker.getLocalRoomById(room.roomId);
