@@ -20,7 +20,10 @@
 - Whenever a new game updates this server, add or update its root README
   Live Demos bullet and supported game registry entry. Use one bullet per game
   in the format `[**Game Name**](GitHub Pages URL) — short description.` and
-  keep the list in alphabetical order by game name. Label demos still in development.
+  keep the lists in alphabetical order by game name. Label demos still in development.
+  Only when an in-development game has no public GitHub Pages URL, use an
+  unlinked `**Game Name** — short description. (In development.)` bullet in
+  both READMEs. Replace it with the linked format when the public URL exists.
 - Preserve release tarball names and public API compatibility when moving files.
 
 ## Verification

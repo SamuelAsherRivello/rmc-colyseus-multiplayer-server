@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "tsx server.ts",
+    "check:docs": "node scripts/check-docs.mjs",
     "typecheck": "tsc --noEmit",
     "probe": "node scripts/probe.mjs",
     "verify:long-session": "node scripts/long-lived-session.mjs",

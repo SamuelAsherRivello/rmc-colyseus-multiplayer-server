@@ -48,8 +48,18 @@ Do not put credentials in frontend configuration. Persistent-user-rejoins is def
 
 This package is part of **RMC Colyseus Multiplayer Server**, which has no standalone demo. These consuming projects use the shared service:
 
-- [Multiplayer Draw](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — a shared drawing canvas with hot join and departure cleanup.
-- [Street Fighter II Clone](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/) — private server-authoritative arcade duels with bounded same-seat recovery. (In development.)
+- [**Bomberman Clone**](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/) — private competitive bomb arena with optional growing plants that block movement.
+- [**Dust Circuit Rally**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race four off-road trucks in a fixed-camera landscape circuit with solo, local and online modes.
+- [**Enter the Gungeon Clone**](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) — survive bullet waves together in private 1–4-player rooms with dodge rolls, upgrades and revives.
+- [**Garden Chat**](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) — wander a shared garden and chat with other visitors.
+- [**Gauntlet Clone 2D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) — cooperate to battle monsters, revive allies, and escape a tile-based dungeon.
+- [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
+- **Just Like Rabbits** — shared rabbit observation habitat with participant-host migration. (In development.)
+- [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — a shared drawing canvas with hot join and departure cleanup.
+- [**Neon Breaker Duo**](https://samuelasherrivello.github.io/babylon-lite-arkanoid-clone/) — co-operate to clear a neon brick field together. (In development.)
+- [**Ring Rivals**](https://samuelasherrivello.github.io/babylon-lite-ring-rivals/) — fight private online 1v1 boxing bouts from mirrored opponent-focused views. (In development.)
+- [**Street Fighter II Clone**](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/) — private server-authoritative arcade duels with bounded same-seat recovery. (In development.)
+- [**Sumo Battle**](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) — push opponents out of the ring in an online sumo arena.
 
 See the [server README](../../../README.md) for setup and the [game registry](../../documentation/games.md) for supported consumers.
 
@@ -109,7 +119,7 @@ Version 0.9.4 adds `match`, `matchWinner`, exposed `powerups`, imminent `warning
 
 Phases are `lobby`, `countdown`, `playing`, `results` and `matchResults`. Rounds last at most two minutes; inward walls warn one second before closure during the final thirty seconds. Same-tick final eliminations draw without points. A surviving winner receives one point, with three-second score breaks and three-second next-round countdowns. First to three reaches `matchResults`; send `rematch` to toggle readiness there. All connected players must ready before a fresh match resets scores, arena, upgrades and inputs. Fewer than two connected players return to lobby after the current round resolves. Late arrivals spectate until the next round.
 
-Bomberman and Ring Rivals enable SDK recovery: unconsented drops can recover the same session automatically for 15 seconds. A room-code join creates a fresh identity and may claim the vacant seat for as long as another player keeps the room active. A solo room remains available through its 15-second empty-room recovery grace. Process restarts end in-memory rooms. Production still uses the Vercel endpoint and its five-minute function limit until the checked-in Render service is provisioned and coded-room consumers migrate.
+Bomberman and Ring Rivals enable SDK recovery: unconsented drops can recover the same session automatically for 15 seconds. A room-code join creates a fresh identity and may claim the vacant seat for as long as another player keeps the room active. A solo room remains available through its 15-second empty-room recovery grace. Process restarts end in-memory rooms. The checked-in release workflow targets Vercel; the cross-instance room-continuity gate remains in the separate `standardize-private-room-flow` change.
 
 ## Ring Rivals (0.9.3 target)
 

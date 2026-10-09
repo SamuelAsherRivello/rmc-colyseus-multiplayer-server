@@ -4,13 +4,13 @@
 |---|---|---|---|---|---|
 | Bomberman Clone | bomberman | 4 | 0.9.2+ | [Multiplayer preview](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/?mode=online) | Optional growing plants block movement without damage. [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L39) · [Lifecycle](../src/private-code-room.ts#L14) |
 | Dust Circuit Rally | dust-circuit-rally | 4 | 0.6.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) | — |
+| Enter the Gungeon Clone | gungeon | 4 | 0.9.7+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) | [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L39) · [Lifecycle](../src/private-code-room.ts#L14) |
 | Garden Chat | garden-chat | 12 | 0.3.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) | — |
-| Just Like Rabbits | just-like-rabbits | 12 | next release | In development | — |
 | Gauntlet Clone 2D | gauntlet-2d | 4 | 0.4.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-2d/) | — |
 | Gauntlet Clone 3D | gauntlet-3d | 4 | 0.5.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) | — |
-| Enter the Gungeon Clone | gungeon | 4 | 0.9.7+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) | [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L39) · [Lifecycle](../src/private-code-room.ts#L14) |
-| Neon Breaker Duo | neon-breaker-duo | 2 | 0.9.3+ | [Live playtest](https://samuelasherrivello.github.io/babylon-lite-arkanoid-clone/) | — |
+| Just Like Rabbits | just-like-rabbits | 12 | next release | In development | — |
 | Multiplayer Draw | multiplayer-draw | 12 | 0.1.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) | — |
+| Neon Breaker Duo | neon-breaker-duo | 2 | 0.9.3+ | [Live playtest](https://samuelasherrivello.github.io/babylon-lite-arkanoid-clone/) | — |
 | Ring Rivals | ring-rivals | 2 | 0.9.3+ | [In development](https://samuelasherrivello.github.io/babylon-lite-ring-rivals/) | [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L39) · [Lifecycle](../src/private-code-room.ts#L14) |
 | Street Fighter II Clone | street-fighter-ii | 2 | 0.9.4+ | [In development](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/) | [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L72) · [Lifecycle](../src/private-code-room.ts#L14) |
 | Sumo Battle | sumo-battle | 12 | 0.2.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) | — |
