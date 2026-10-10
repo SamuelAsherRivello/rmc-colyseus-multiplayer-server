@@ -49,6 +49,7 @@ Do not put credentials in frontend configuration. Persistent-user-rejoins is def
 This package is part of **RMC Colyseus Multiplayer Server**, which has no standalone demo. These consuming projects use the shared service:
 
 - [**Bomberman Clone**](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/) — private competitive bomb arena with optional growing plants that block movement.
+- **Combat Clone** — four-tank free-for-all with 1–4 humans, fair CPU fill and Classic/Ricochet shots. (In development.)
 - [**Dust Circuit Rally**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race four off-road trucks in a fixed-camera landscape circuit with solo, local and online modes.
 - [**Enter the Gungeon Clone**](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) — survive bullet waves together in private 1–4-player rooms with dodge rolls, upgrades and revives.
 - [**Garden Chat**](https://samuelasherrivello.github.io/babylon-lite-garden-chat/) — wander a shared garden and chat with other visitors.
@@ -56,6 +57,7 @@ This package is part of **RMC Colyseus Multiplayer Server**, which has no standa
 - [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
 - **Just Like Rabbits** — shared rabbit observation habitat with participant-host migration. (In development.)
 - [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — a shared drawing canvas with hot join and departure cleanup.
+- **Music Maker Multiplayer** — four-player host-simulated music sandbox with next-step local and three-second remote sounds. (In development.)
 - [**Neon Breaker Duo**](https://samuelasherrivello.github.io/babylon-lite-arkanoid-clone/) — co-operate to clear a neon brick field together. (In development.)
 - [**Ring Rivals**](https://samuelasherrivello.github.io/babylon-lite-ring-rivals/) — fight private online 1v1 boxing bouts from mirrored opponent-focused views. (In development.)
 - [**Street Fighter II Clone**](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/) — private server-authoritative arcade duels with bounded same-seat recovery. (In development.)
@@ -134,3 +136,9 @@ Matches are best of three, with 60-second rounds, knockout and health decisions,
 ## Music Maker Multiplayer
 
 Create `new MultiplayerClient(endpoint, "music-maker", {create:true})` or join with `{code:"AB12"}`. Four players; `state.hostId` owns simulation. Subscribe to `musicIntent`, `musicClockRequest`, `musicClockReply`, `musicCommit`, `musicSnapshotRequest`, `musicSnapshot`, `musicRejected`, and `musicEnded`; payload is `state.musicMessage`. Use `send(type,payload)`. A host sends commits `{epoch,sequence,origin,step,sound,deadline}`; sound is kick/snare/hat/tone. Intents contain epoch/sequence/step/sound and receive a relay-stamped origin. Clock requests contain request/sent and receive origin; host replies with target/request/sent/received/hostNow/start/epoch. Snapshots contain target/epoch/start/hostNow/sequence/events, at most 112 pending events and 14 KiB encoded. Guest messages are bounded at 32/s; host output aggregation at 128/s. Heartbeats run every five seconds. Host loss emits musicEnded and ends the session, without retrying into a new room. Origins play at the source deadline, all other listeners at deadline+3000 ms. Browser host is authoritative; relay never creates beats.
+
+## Combat Clone
+
+Use `new MultiplayerClient(endpoint, "combat", {create:true,code:suggestRoomCode()})`, or `{code}` to join. Import `ARENAS`, `TUNING` and `moveTank` from `@rmc/multiplayer-client/combat` for shared local prediction. See the [complete protocol](../../documentation/combat.md).
+
+Combat differs from generic code-rejoin guidance: only same-session SDK recovery preserves a protected seat for 15 seconds. A fresh code join cannot steal a recovery reservation. Midmatch arrivals observe until the next match. Exactly four stable tanks remain with CPU fill. Existing Vercel hosting is process-local best effort; expired rooms require recreation and scores may be lost.

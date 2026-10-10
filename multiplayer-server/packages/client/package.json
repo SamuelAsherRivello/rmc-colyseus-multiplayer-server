@@ -9,7 +9,8 @@
     "./racing-track": "./racing-track.js",
     "./street-fighter": "./street-fighter-simulation.js",
     "./bomberman": "./bomberman-rules.js",
-    "./bomberman-cpu": "./bomberman-cpu.js"
+    "./bomberman-cpu": "./bomberman-cpu.js",
+    "./combat": "./combat-rules.js"
   },
   "files": [
     "index.js",
@@ -20,7 +21,8 @@
     "street-fighter-combat.js",
     "street-fighter-fighters.js",
     "bomberman-rules.js",
-    "bomberman-cpu.js"
+    "bomberman-cpu.js",
+    "combat-rules.js"
   ],
   "dependencies": {
     "@colyseus/sdk": "0.17.43"

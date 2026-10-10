@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { Room, Server, ServerError, matchMaker, type Client } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { BOMBERMAN_ROOM_CODE_LENGTH, generatePrivateRoomCode, normalizePrivateRoomCode, PrivateRoomCodeRateLimiter } from "./private-room-codes.js";
+import { CombatRoom } from "./combat-room.js";
 import { BombermanRoom } from './bomberman-room.js';
 import { GungeonRoom } from "./gungeon-room.js";
 import { DrawingRoom } from "./drawing-room.js";
@@ -27,9 +28,9 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
-type GameRoom = typeof MusicRoom | typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom | typeof RingRivalsRoom | typeof StreetFighterRoom | typeof JustLikeRabbitsRoom;
+type GameRoom = typeof CombatRoom | typeof MusicRoom | typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom | typeof RingRivalsRoom | typeof StreetFighterRoom | typeof JustLikeRabbitsRoom;
 const games = new Map<string, GameRoom>([
-  ["music-maker", MusicRoom], ["bomberman", BombermanRoom], ["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom],
+  ["music-maker", MusicRoom], ["combat", CombatRoom], ["bomberman", BombermanRoom], ["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom],
   ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom],
   ["gauntlet-3d", GauntletRoom], ["dust-circuit-rally", RacingRoom],
   ["neon-breaker-duo", NeonBreakerRoom], ["ring-rivals", RingRivalsRoom],
@@ -174,7 +175,7 @@ const gameServer = new Server({
       if (!games.has(req.params.game)) { res.status(404).json({ error: "Unknown game" }); return; }
       try {
         const game = req.params.game;
-        if (["music-maker", "gungeon", "bomberman", "ring-rivals", "street-fighter-ii"].includes(game) && (req.body as { create?: boolean })?.create !== true) {
+        if (["combat", "music-maker", "gungeon", "bomberman", "ring-rivals", "street-fighter-ii"].includes(game) && (req.body as { create?: boolean })?.create !== true) {
           if (!privateRoomCodeAttempts.take(req.ip || req.socket.remoteAddress || "unknown")) {
             res.setHeader("Retry-After", "60");
             res.status(429).json({ error: "Too many room-code attempts. Try again shortly.", errorCode: "rate_limited" });
@@ -183,7 +184,7 @@ const gameServer = new Server({
         }
         const reservation = game === "street-fighter-ii"
           ? await reserveStreetFighter(req.body)
-          : ["music-maker", "gungeon", "bomberman", "ring-rivals"].includes(game)
+          : ["combat", "music-maker", "gungeon", "bomberman", "ring-rivals"].includes(game)
             ? await reserveDungeon(req.body, game)
             : await reserve(game);
         res.json(reservation);

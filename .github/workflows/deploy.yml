@@ -80,6 +80,10 @@ jobs:
         env:
           SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
         run: npm run probe
+      - name: Verify Combat through the stable production URL
+        env:
+          SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
+        run: node --import tsx --test multiplayer-server/test/combat-integration.mjs
       - name: Restore the previous production deployment if public verification fails
         if: ${{ failure() && steps.promote.outcome == 'success' }}
         run: vercel rollback --token="$VERCEL_TOKEN"

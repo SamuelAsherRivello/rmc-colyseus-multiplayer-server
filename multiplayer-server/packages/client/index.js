@@ -64,7 +64,7 @@ export class MultiplayerClient {
         if (payload.token) this.state.reconnectToken = payload.token;
       }
       room = await new Client(this.endpoint).consumeSeatReservation(reservation);
-      const recoversSeat = this.game === 'bomberman' || this.game === 'ring-rivals';
+      const recoversSeat = this.game === 'combat' || this.game === 'bomberman' || this.game === 'ring-rivals';
       room.reconnection.enabled = recoversSeat;
       if (recoversSeat) {
         room.reconnection.maxRetries = 18; room.reconnection.minDelay = 200; room.reconnection.maxDelay = 1000; room.reconnection.minUptime = 0;
@@ -128,7 +128,7 @@ export class MultiplayerClient {
       room.onLeave(() => {
         if (generation !== this.generation || this.stopped) return;
         this.room = undefined;
-        this.schedule("Connection lost. Rejoining as a new player…");
+        if (this.game === "combat") { this.state.status = "error"; this.state.error = "Room recovery ended. Retry the code or create a new room; scores may be lost."; this.emit("status"); } else this.schedule("Connection lost. Rejoining as a new player…");
       });
       room.send("snapshot");
       const heartbeat = (this.game === "just-like-rabbits" || this.game === "music-maker") ? setInterval(() => room.send("heartbeat"), 5000) : null;
