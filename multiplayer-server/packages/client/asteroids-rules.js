@@ -231,6 +231,19 @@ function move(o, dt) {
   o.x = wrap(o.x + o.vx * dt, 640);
   o.y = wrap(o.y + o.vy * dt, 360);
 }
+/** Movement-only prediction: never changes lives, damage, shots or wave outcomes. */
+export function predictShip(p, input, dt = TUNING.tick) {
+  p.angle = wrap(p.angle + input.turn * TUNING.turnSpeed * dt, Math.PI * 2);
+  if (input.thrust) {
+    p.vx += Math.cos(p.angle) * TUNING.thrust * dt;
+    p.vy += Math.sin(p.angle) * TUNING.thrust * dt;
+  }
+  const speed = Math.hypot(p.vx, p.vy),
+    scale = speed > TUNING.maxSpeed ? TUNING.maxSpeed / speed : 1;
+  p.vx *= scale * Math.exp(-TUNING.drag * dt);
+  p.vy *= scale * Math.exp(-TUNING.drag * dt);
+  move(p, dt);
+}
 export function stepWorld(s, dt = TUNING.tick) {
   if (!(dt > 0 && dt <= 0.1)) throw new Error("Invalid timestep");
   s.tick++;
@@ -251,16 +264,7 @@ export function stepWorld(s, dt = TUNING.tick) {
       s.time - p.inputAt <= TUNING.inputExpiry
         ? p.input
         : { turn: 0, thrust: false, fire: false };
-    p.angle = wrap(p.angle + input.turn * TUNING.turnSpeed * dt, Math.PI * 2);
-    if (input.thrust) {
-      p.vx += Math.cos(p.angle) * TUNING.thrust * dt;
-      p.vy += Math.sin(p.angle) * TUNING.thrust * dt;
-    }
-    const speed = Math.hypot(p.vx, p.vy),
-      scale = speed > TUNING.maxSpeed ? TUNING.maxSpeed / speed : 1;
-    p.vx *= scale * Math.exp(-TUNING.drag * dt);
-    p.vy *= scale * Math.exp(-TUNING.drag * dt);
-    move(p, dt);
+    predictShip(p, input, dt);
     if (
       input.fire &&
       s.time >= p.fireAt &&

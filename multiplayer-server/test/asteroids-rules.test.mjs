@@ -291,3 +291,31 @@ test("worst-case compact full snapshot fits with four UUID players, 72 rocks and
   const bytes = Buffer.byteLength(JSON.stringify(snapshot(s, 9999)));
   assert.ok(bytes < 12288, `${bytes} bytes exceeds frame budget`);
 });
+
+test("movement-only prediction tracks host integration through wrapped thrust and rotation", async () => {
+  const { predictShip } = await import("../packages/client/asteroids-rules.js");
+  const world = createWorld(77);
+  const host = setConnected(world, "prediction", true);
+  host.x = 639;
+  host.y = 359;
+  world.asteroids = [];
+  world.phase = "intermission";
+  world.until = 9999;
+  const predicted = structuredClone(host);
+  for (let tick = 1; tick <= 240; tick++) {
+    const input = {
+      runId: world.runId,
+      seq: tick,
+      turn: tick < 120 ? 1 : -1,
+      thrust: true,
+      fire: false,
+    };
+    applyInput(world, host.id, input);
+    stepWorld(world);
+    predictShip(predicted, input);
+    for (const key of ["x", "y", "vx", "vy", "angle"])
+      assert.equal(predicted[key], host[key]);
+  }
+  assert.equal(predicted.lives, 3);
+  assert.equal(predicted.score, 0);
+});

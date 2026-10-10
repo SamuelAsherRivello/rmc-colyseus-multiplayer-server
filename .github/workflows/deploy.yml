@@ -77,6 +77,11 @@ jobs:
         env:
           SERVER_URL: ${{ steps.deploy.outputs.url }}
           LONG_SESSION_SECONDS: '240'
+      - name: Verify ten-minute Asteroids continuity and fixed host renewal
+        run: node scripts/asteroids-live-session.mjs
+        env:
+          SERVER_URL: ${{ steps.deploy.outputs.url }}
+          LONG_SESSION_SECONDS: '600'
       - name: Promote the verified deployment to the stable production URL
         id: promote
         env:
@@ -94,6 +99,12 @@ jobs:
         env:
           SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
         run: node --import tsx --test multiplayer-server/test/combat-integration.mjs
+      - name: Verify Asteroids through the stable production URL
+        run: node scripts/asteroids-live-session.mjs
+        env:
+          SERVER_URL: https://rmc-colyseus-multiplayer-server.vercel.app
+          LONG_SESSION_SECONDS: '8'
       - name: Restore the previous production deployment if public verification fails
         if: ${{ failure() && steps.promote.outcome == 'success' }}
         run: vercel rollback --token="$VERCEL_TOKEN"
+

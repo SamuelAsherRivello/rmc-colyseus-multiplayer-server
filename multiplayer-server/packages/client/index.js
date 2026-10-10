@@ -52,14 +52,14 @@ export class MultiplayerClient {
     let room;
     try {
       let response;
+      // Hobby may route a simultaneous code lookup to a fresh instance. Retry
+      // only opted-in private games' missing-room responses; never create overflow rooms.
       for (let attempt = 0; ; attempt++) {
         response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(this.options), signal: AbortSignal.timeout(15000) });
-        // Vercel can route concurrent HTTP admissions to a cold instance which
-        // cannot see this process-local room. Retry the same private invitation
-        // briefly; never create an overflow room or reset the participant.
-        if (response.status !== 404 || !["combat", "space-invaders"].includes(this.game) || this.options.create === true || attempt >= 3) break;
-        await response.text();
-        await new Promise(resolve => setTimeout(resolve, 150 * 2 ** attempt));
+        if (this.stopped || generation !== this.generation) return;
+        if (!['combat','space-invaders'].includes(this.game) || this.options.create === true || response.status !== 404 || attempt >= 3) break;
+        await response.arrayBuffer();
+        await new Promise(resolve => setTimeout(resolve, (this.game === 'combat' ? [150,350,700][attempt] : 150 * 2 ** attempt)));
         if (this.stopped || generation !== this.generation) return;
       }
       const payload = await response.json();
@@ -82,11 +82,11 @@ export class MultiplayerClient {
       for (let attempt = 0; ; attempt++) {
         try { room = await new Client(this.endpoint).consumeSeatReservation(reservation); break; }
         catch (error) {
-          // Reuse the issued reservation if a socket upgrade lands on another
-          // instance. A fresh HTTP reservation would temporarily consume an
-          // extra seat and make concurrent joins report a false full room.
-          if (!["combat", "space-invaders"].includes(this.game) || attempt >= 3) throw error;
-          await new Promise(resolve => setTimeout(resolve, 150 * 2 ** attempt));
+          // Keep the original reserved identity when a Hobby socket upgrade is
+          // routed away from its owner. Re-admission would reserve a second seat.
+          if (!['combat','space-invaders'].includes(this.game)) throw error;
+          if (attempt >= (this.game === 'combat' ? 2 : 3)) { error.expired = true; error.message = 'Could not attach to this room. Retry the code after the reserved seat expires, or create a new room.'; throw error; }
+          await new Promise(resolve => setTimeout(resolve, (this.game === 'combat' ? 200 * (attempt + 1) : 150 * 2 ** attempt)));
           if (this.stopped || generation !== this.generation) return;
         }
       }

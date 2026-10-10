@@ -6,7 +6,7 @@ import {MultiplayerClient} from '../packages/client/index.js';
 const port=23000+(process.pid%17000),endpoint=process.env.SERVER_URL||`http://127.0.0.1:${port}`;
 const clients=[];
 async function until(fn,label,ms=20000){const end=Date.now()+ms;while(!fn()){if(Date.now()>end)throw Error(label);await delay(30);}}
-async function join(options){const c=new MultiplayerClient(endpoint,'combat',options);clients.push(c);void c.connect();await until(()=>['connected','full','error'].includes(c.state.status),'Combat admission: '+JSON.stringify(c.state));return c;}
+async function join(options){const c=new MultiplayerClient(endpoint,'combat',options);clients.push(c);void c.connect();await until(()=>['connected','full','error'].includes(c.state.status),'Combat admission: '+JSON.stringify(c.state));if(c.state.status==='error')console.log('admissionError',JSON.stringify({options,status:c.state.status,error:c.state.error}));return c;}
 test('Combat real private admission, authoritative motion/fire, populations, recovery races and isolation',{timeout:95000},async()=>{
  let server;
  try{
@@ -39,7 +39,7 @@ test('Combat real private admission, authoritative motion/fire, populations, rec
   const other=await join({create:true,code});assert.equal(other.state.status,'error','duplicate code rejected');
   const independent=await join({create:true});assert.notEqual(independent.state.roomId,b.state.roomId);
   const peers=await Promise.all(Array.from({length:3},()=>join({code:independent.state.code})));
-  assert.ok(peers.every(p=>p.state.status==='connected'&&p.state.roomId===independent.state.roomId),'simultaneous reservations share one room: '+JSON.stringify(peers.map(p=>({status:p.state.status,room:p.state.roomId,error:p.state.error,expected:independent.state.roomId}))));
+  assert.ok(peers.every(p=>p.state.status==='connected'&&p.state.roomId===independent.state.roomId),'simultaneous reservations share one room: '+JSON.stringify(peers.map(p=>({status:p.state.status,room:p.state.roomId,error:p.state.error,code:p.state.code}))));
   await until(()=>independent.state.gameState.people.length===4,'four simultaneous humans');
   assert.equal(independent.state.gameState.tanks.filter(t=>t.cpu).length,0);
   const expiredCode=independent.state.code;for(const peer of [independent,...peers])peer.disconnect();
@@ -49,3 +49,4 @@ test('Combat real private admission, authoritative motion/fire, populations, rec
   console.log(JSON.stringify({combatProbe:'passed',endpoint,room:b.state.roomId,protocol:b.state.gameState.protocol,tanks:b.state.gameState.tanks.length,tick:b.state.gameState.tick,mode:b.state.gameState.mode}));
  }finally{clients.forEach(c=>c.disconnect());await delay(250);server?.kill();}
 });
+
