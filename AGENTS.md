@@ -11,6 +11,20 @@
 - Root package/configuration files, `scripts/`, and `.github/workflows/`
   manage development, verification, and releases.
 
+## Required hosting: Vercel free plan
+
+- You MUST use Vercel's free (Hobby) plan for this project. This is a fixed
+  requirement, not a preference.
+- Keep implementation, configuration, and deployment proposals compatible
+  with the free plan's features and limits. Do not enable paid features,
+  purchase services, or upgrade the plan.
+- Do not ask the user to choose a hosting provider or plan. Do not suggest
+  alternative providers or paid plans as workarounds.
+- When a requirement conflicts with the free plan, adapt the implementation
+  to work within its limits. If that is impossible, explain the specific
+  limitation without asking the user to switch providers or upgrade.
+- This requirement does not authorize deployment; deploy only when requested.
+
 ## Documentation and consumers
 
 - Use **Live Demos** in READMEs and link to the GitHub Pages sites of consuming
