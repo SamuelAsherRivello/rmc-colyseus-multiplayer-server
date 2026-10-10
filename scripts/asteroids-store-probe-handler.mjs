@@ -8,10 +8,10 @@ export default async function(req,res) {
   if(!/^[a-f0-9-]{36}$/.test(key||'')){res.statusCode=400;res.end('{}');return;}
   const path=`asteroids/probes/${key}.json`;
   try {
-    if(op==='read') {
-      const result=await get(path,{access:'private',useCache:false});
+    if(op==='read' || op==='read-identity') {
+      const result=await get(path,{access:'private',useCache:false,...(op==='read-identity'?{headers:{'accept-encoding':'identity'}}:{})});
       if(!result || result.statusCode!==200)throw new Error('Missing probe document');
-      res.end(JSON.stringify({instance,etag:result.blob.etag,value:await new Response(result.stream).json()}));return;
+      res.end(JSON.stringify({instance,etag:result.blob.etag,encoding:result.headers.get("content-encoding"),weak:result.blob.etag.startsWith("W/"),value:await new Response(result.stream).json()}));return;
     }
     if(op==='delete'){await del(path);res.end(JSON.stringify({instance,deleted:true}));return;}
     const chunks=[];for await(const chunk of req)chunks.push(chunk);
@@ -24,3 +24,4 @@ export default async function(req,res) {
     }else{res.statusCode=500;res.end(JSON.stringify({instance,error:error.name}));}
   }
 }
+
