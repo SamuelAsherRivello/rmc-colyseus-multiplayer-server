@@ -27,24 +27,37 @@ jobs:
           import { randomUUID } from 'node:crypto';
           const instance=randomUUID();
           export default async function(req,res){
-            if(req.headers['x-probe-secret']!==process.env.PROBE_SECRET){res.status(403).end();return;}
-            const key=String(req.query.key||'');if(!/^[a-f0-9-]{36}$/.test(key)){res.status(400).end();return;}
+            if(req.headers['x-probe-secret']!==process.env.PROBE_SECRET){res.statusCode=403;res.end();return;}
+            const key=new URL(req.url,'http://probe').searchParams.get('key')||'';if(!/^[a-f0-9-]{36}$/.test(key)){res.statusCode=400;res.end();return;}
             const cache=getCache({namespace:'rmc-asteroids-feasibility-v1'}),start=performance.now();
-            if(req.method==='POST'){await cache.set(key,req.body,{ttl:60});res.json({instance,writeMs:performance.now()-start});}
-            else res.json({instance,value:await cache.get(key),readMs:performance.now()-start});
+            res.setHeader('Content-Type','application/json');
+            if(req.method==='POST'){const chunks=[];for await(const chunk of req)chunks.push(chunk);await cache.set(key,JSON.parse(Buffer.concat(chunks).toString()),{ttl:60});res.end(JSON.stringify({instance,writeMs:performance.now()-start}));}
+            else res.end(JSON.stringify({instance,value:await cache.get(key),readMs:performance.now()-start}));
           }`;
           for(const name of ['cache-a','cache-b'])fs.writeFileSync('.hosting-probe/api/'+name+'.mjs',source);
           NODE
           npm install --prefix .hosting-probe --ignore-scripts
           npm install --global vercel@62.2.0
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const output='.hosting-probe/.vercel/output';fs.mkdirSync(output,{recursive:true});
+          fs.writeFileSync(output+'/config.json',JSON.stringify({version:3,routes:[{handle:'filesystem'}]}));
+          fs.writeFileSync(output+'/builds.json',JSON.stringify({target:'preview',builds:[]}));
+          for(const name of ['cache-a','cache-b']){
+            const folder=output+'/functions/api/'+name+'.func';fs.mkdirSync(folder,{recursive:true});
+            fs.copyFileSync('.hosting-probe/api/'+name+'.mjs',folder+'/index.mjs');
+            fs.cpSync('.hosting-probe/node_modules',folder+'/node_modules',{recursive:true});
+            fs.writeFileSync(folder+'/.vc-config.json',JSON.stringify({runtime:'nodejs24.x',handler:'index.mjs',launcherType:'Nodejs',maxDuration:30,regions:['iad1']}));
+          }
+          NODE
       - name: Stage probe without changing the production alias
         id: deploy
         run: |
           probe_secret="$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))")"
           echo "::add-mask::$probe_secret"
           echo "PROBE_SECRET=$probe_secret" >> "$GITHUB_ENV"
-          vercel pull --yes --environment=production --cwd .hosting-probe --token="$VERCEL_TOKEN"
-          url="$(vercel deploy --yes --prod --skip-domain --cwd .hosting-probe --env PROBE_SECRET="$probe_secret" --token="$VERCEL_TOKEN")"
+          vercel pull --yes --environment=preview --cwd .hosting-probe --token="$VERCEL_TOKEN"
+          url="$(vercel deploy --prebuilt --yes --cwd .hosting-probe --env PROBE_SECRET="$probe_secret" --token="$VERCEL_TOKEN")"
           echo "url=$url" >> "$GITHUB_OUTPUT"
       - name: Verify fresh cross-function cache visibility and record latency
         env:
@@ -70,3 +83,4 @@ jobs:
         with:
           name: asteroids-cache-probe
           path: asteroids-cache-probe.json
+
