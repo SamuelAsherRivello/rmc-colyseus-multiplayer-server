@@ -60,9 +60,26 @@ jobs:
           SERVER_URL: ${{ steps.deploy.outputs.url }}
         run: node scripts/verify-release-health.mjs
       - name: Verify every registered game against the staged deployment
-        run: npm test
+        run: |
+          set -o pipefail
+          # Keep every assertion. A single bounded rerun addresses transient
+          # public-network/cold-instance failures, with both attempts retained.
+          state="$RUNNER_TEMP/staged-game-tests.json"
+          node --import tsx --test --test-concurrency=1 --test-rerun-failures="$state" multiplayer-server/test/*.mjs 2>&1 | tee "$RUNNER_TEMP/staged-game-first.log" && exit 0
+          echo "::warning::Staged public checks had failures. Rerunning failed tests once; all must pass before promotion."
+          node --import tsx --test --test-concurrency=1 --test-rerun-failures="$state" multiplayer-server/test/*.mjs 2>&1 | tee "$RUNNER_TEMP/staged-game-rerun.log"
         env:
           SERVER_URL: ${{ steps.deploy.outputs.url }}
+      - name: Retain staged verification attempts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staged-game-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/staged-game-tests.json
+            ${{ runner.temp }}/staged-game-first.log
+            ${{ runner.temp }}/staged-game-rerun.log
+          if-no-files-found: ignore
       - name: Verify private Tetris relay gameplay and recovery
         run: node --import tsx --test multiplayer-server/test/tetris-duel-integration.mjs
         env:

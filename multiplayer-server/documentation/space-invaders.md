@@ -34,3 +34,9 @@ sessions are deployment-tested. Process eviction, cross-instance routing, or
 platform socket closure can expire a room; these are backend failures, distinct
 from browser host migration. This release adds no external hosting provider.
 
+The deployment gate runs every registered game's assertions against staging.
+Transient public-network or cold-instance failures receive at most one rerun,
+using Node 24's persisted failed-test state. Both attempt logs are retained as
+workflow artifacts. Every assertion must pass before promotion; local checks
+and the game-specific duration/migration probes retain their separate gates.
+
