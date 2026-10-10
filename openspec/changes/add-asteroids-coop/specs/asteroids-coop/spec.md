@@ -26,3 +26,20 @@ The release SHALL demonstrate ten minutes of public shared state with one fixed 
 #### Scenario: Connection renewal
 - **WHEN** hosting replaces a connection during the acceptance run
 - **THEN** the same room, host, lives, wave and damaged entities remain consistent without electing another host
+
+### Requirement: Isolated free deployment preserves existing production
+The shared repository SHALL support a dedicated Asteroids deployment on Vercel Hobby without changing the default shared game registry or the original production endpoint. Release publication SHALL require successful regression preparation and verification of the selected deployment target.
+
+#### Scenario: Dedicated registration
+- **WHEN** the server starts with `ASTEROIDS_ONLY=1`
+- **THEN** its advertised game list contains only `asteroids-coop`
+- **AND** Asteroids admission succeeds while admission to legacy games returns unknown-game responses
+
+#### Scenario: Default shared deployment
+- **WHEN** `ASTEROIDS_ONLY` is absent
+- **THEN** all existing game registrations remain available through the unchanged shared deployment path
+
+#### Scenario: Verified dedicated release
+- **WHEN** Release runs with `target=asteroids`
+- **THEN** the exact main-history source passes the full regression suite and isolated live continuity gate before promotion and package publication
+- **AND** no paid plan, third-party service or alternative provider is enabled
