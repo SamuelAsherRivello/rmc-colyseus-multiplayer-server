@@ -31,3 +31,9 @@ Blob writes occur on creation, admission, departure and renewal, never on simula
 References: https://vercel.com/docs/vercel-blob/using-blob-sdk; https://vercel.com/changelog/vercel-blob-now-supports-consistent-reads-on-private-storage; https://vercel.com/docs/vercel-blob/usage-and-pricing; https://vercel.com/docs/functions/websockets.
 
 
+
+## Isolated Hobby production target
+
+The verified Asteroids shared-state relay is deployed from this same repository to a dedicated Vercel Hobby project, `rmc-asteroids-coop`, with `ASTEROIDS_ONLY=1`. Its stable endpoint is intended to be https://rmc-asteroids-coop.vercel.app. The flag restricts registered games and admission; default deployments retain the full existing registry. A focused local integration verifies isolation and successful Asteroids admission. Existing games keep the original shared production URL and their existing release gate. This avoids promoting their unverified process-local room behavior during an Asteroids release; it does not claim their hosting constraints have been solved.
+
+Provisioning run 38086649633 confirmed Hobby, Fluid Compute and private first-party Blob. No paid plan, third-party runtime store, or external provider was enabled. The Release workflow accepts `target=asteroids`, requires full-source regression preparation, and delegates to the dedicated deployment gate: immutable main source, Hobby verification, isolated health/version, four-seat admission and hot drops, 600-second continuity with two renewals per sustained client, promotion, and the stable-endpoint probe before publishing the package. Independent target locks preserve each deployment while immutable versioned assets remain uniquely named. Concurrent shared release v0.9.11 is separate; the planned Asteroids package release is v0.9.12.
