@@ -14,14 +14,14 @@ test('Combat real private admission, authoritative motion/fire, populations, rec
   assert.ok((await (await fetch(endpoint+'/api/health')).json()).games.includes('combat'));
   const a=await join({create:true});assert.equal(a.state.status,'connected');const code=a.state.code;assert.match(code,/^[A-Z0-9]{4}$/);
   assert.equal(a.state.gameState.protocol,1);assert.equal(a.state.gameState.tanks.length,4);assert.equal(a.state.gameState.tanks.filter(t=>t.cpu).length,3);
-  const b=await join({code});assert.equal(b.state.roomId,a.state.roomId);await until(()=>a.state.gameState.people.length===2,'two people');assert.equal(a.state.gameState.tanks.filter(t=>t.cpu).length,2);
+  const b=await join({code});assert.equal(b.state.status,'connected',b.state.error);assert.equal(b.state.roomId,a.state.roomId);await until(()=>a.state.gameState.people.length===2,'two people');assert.equal(a.state.gameState.tanks.filter(t=>t.cpu).length,2);
   b.send('options',{mode:'ricochet',difficulty:'high',arena:'switchback'});await delay(120);assert.equal(a.state.gameState.mode,'classic');
   a.send('options',{mode:'ricochet',difficulty:'high',arena:'switchback'});await until(()=>b.state.gameState.mode==='ricochet','host options');assert.equal(b.state.gameState.arena,'switchback');
   a.send('ready');await delay(100);assert.equal(b.state.gameState.phase,'lobby');b.send('ready');await until(()=>a.state.gameState.phase==='playing','start countdown');
   const start={...a.state.gameState.tanks[0]};let seq=0;const controls=setInterval(()=>a.send('input',{seq:++seq,drive:1,turn:0,fire:true}),50);
   try{await until(()=>b.state.gameState.tanks[0].ack>=2&&b.state.gameState.tanks[0].cooldown>0,'authoritative controls and shots');assert.ok(Math.hypot(b.state.gameState.tanks[0].x-start.x,b.state.gameState.tanks[0].y-start.y)>0);}finally{clearInterval(controls);a.send('input',{seq:++seq,drive:0,turn:0,fire:false});}
-  const c=await join({code});await until(()=>a.state.gameState.people.length===3,'late arrival');assert.equal(c.state.gameState.people.find(p=>p.id===c.state.sessionId).waiting,true);assert.equal(c.state.gameState.tanks.filter(t=>t.cpu).length,2);
-  const d=await join({code});assert.equal(d.state.roomId,a.state.roomId);const full=await join({code});assert.equal(full.state.status,'full');
+  const c=await join({code});assert.equal(c.state.status,'connected',c.state.error);await until(()=>a.state.gameState.people.length===3,'late arrival');assert.equal(c.state.gameState.people.find(p=>p.id===c.state.sessionId).waiting,true);assert.equal(c.state.gameState.tanks.filter(t=>t.cpu).length,2);
+  const d=await join({code});assert.equal(d.state.status,'connected',d.state.error);assert.equal(d.state.roomId,a.state.roomId);const full=await join({code});assert.equal(full.state.status,'full');
   const previousAck=a.state.gameState.tanks[0].ack;
   a.send('input',{seq:2147483647,drive:99,turn:0,fire:false,score:999});
   a.send('input',{seq:0,drive:1,turn:0,fire:false});
