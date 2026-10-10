@@ -1,6 +1,11 @@
 name: Verify Asteroids first-party continuity preview
 on:
   workflow_dispatch:
+    inputs:
+      seconds:
+        description: Continuity duration (600 for acceptance, 8 for focused diagnostics)
+        default: "600"
+        required: true
 permissions:
   contents: read
 jobs:
@@ -30,5 +35,6 @@ jobs:
       - name: Verify ten minutes across two planned connection windows
         env:
           SERVER_URL: ${{ steps.deploy.outputs.url }}
-          LONG_SESSION_SECONDS: '600'
+          LONG_SESSION_SECONDS: ${{ inputs.seconds }}
         run: node scripts/asteroids-live-session.mjs
+

@@ -1,6 +1,7 @@
 import type { WebSocket } from "ws";
 import {
   AsteroidsContinuity,
+  RelayError,
   publicPresence,
   roomKey,
   type Registry,
@@ -253,3 +254,4 @@ export function attachAsteroidsSocket(
     stopped = true;
   });
 }
+
