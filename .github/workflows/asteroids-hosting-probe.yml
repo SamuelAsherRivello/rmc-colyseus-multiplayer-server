@@ -45,7 +45,7 @@ jobs:
           fs.writeFileSync(output+'/builds.json',JSON.stringify({target:'preview',builds:[]}));
           for(const name of ['cache-a','cache-b']){
             const folder=output+'/functions/api/'+name+'.func';fs.mkdirSync(folder,{recursive:true});
-            fs.copyFileSync('.hosting-probe/api/'+name+'.mjs',folder+'/index.mjs');
+            fs.writeFileSync(folder+'/index.mjs',fs.readFileSync('.hosting-probe/api/'+name+'.mjs','utf8')+'\n// distinct function '+name);
             fs.cpSync('.hosting-probe/node_modules',folder+'/node_modules',{recursive:true});
             fs.writeFileSync(folder+'/.vc-config.json',JSON.stringify({runtime:'nodejs24.x',handler:'index.mjs',launcherType:'Nodejs',maxDuration:30,regions:['iad1']}));
           }
@@ -83,4 +83,5 @@ jobs:
         with:
           name: asteroids-cache-probe
           path: asteroids-cache-probe.json
+
 
