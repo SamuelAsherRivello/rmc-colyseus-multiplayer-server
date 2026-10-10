@@ -29,3 +29,7 @@ User expressly requires existing server relay and free Vercel; this overrides cr
 ## Migration Plan
 
 Run Node24 clean install/typecheck/alltests/docs/pack. Commit scoped files on main and invoke checked-in release/deploy workflows with existing secrets. Stage checks must pass before promotion; rollback on failed public validation. Verify exact package asset and endpoint before client creation. After public game verification update both live-demo catalogs with its actual URL. Preserve unrelated changes and release-generated commits.
+
+## Public admission regression repair
+
+Staged release 38084815998 passed Tetris but exposed existing Bomberman/Combat/Ring Rivals admission failures. The pinned SDK reservation promise has no close-before-join rejection or handshake timeout. Use its protected room factory in an isolated subclass to attach close/abort/deadline handling, close failed sockets, and retain the exact reservation across bounded retries. Apply this only to existing private retry games plus Bomberman, preserving unrelated game lifecycles. Full/invalid-token responses remain terminal; no new room or extra seat is allocated. Verify focused lifecycle tests, real staged regressions, all local tests and package inclusion before retrying publication.

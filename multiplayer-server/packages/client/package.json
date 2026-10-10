@@ -29,7 +29,8 @@
     "asteroids-rules.js",
     "asteroids-connection.js",
     "asteroids-shared-connection.js",
-    "tetris-duel-rules.js"
+    "tetris-duel-rules.js",
+    "seat-reservation.js"
   ],
   "dependencies": {
     "@colyseus/sdk": "0.17.43"

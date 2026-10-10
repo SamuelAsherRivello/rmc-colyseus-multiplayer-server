@@ -169,4 +169,6 @@ Rooms are process-local on the free Vercel Hobby deployment. Participant-host mi
 
 ### Bounded private relay admission
 
-Combat, Space Invaders, Ring Rivals and Tetris retry transient missing-room lookups and socket attachment within a bounded budget. Socket retries reuse the original reservation and identity; they do not reserve extra seats or create replacement rooms. Full rooms, malformed codes and invalid private tokens remain terminal. Leaving cancels outstanding retries. These retries do not promise cross-instance durability.
+Combat, Bomberman, Space Invaders, Ring Rivals and Tetris retry transient missing-room lookups and socket attachment within a bounded budget. Socket retries reuse the original reservation and identity; they do not reserve extra seats or create replacement rooms. Full rooms, malformed codes and invalid private tokens remain terminal. Leaving cancels outstanding retries. These retries do not promise cross-instance durability.
+
+Each opted-in socket handshake is bounded to three seconds. A socket that closes before joining rejects promptly; failure, timeout and cancellation close the attempted socket. This covers a gap in the pinned SDK, whose reservation promise otherwise can remain pending after a pre-join close. Retries keep their existing original-seat budget and do not repeat admission.

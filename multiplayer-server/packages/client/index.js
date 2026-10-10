@@ -1,4 +1,5 @@
 import { Client } from "@colyseus/sdk";
+import {consumeReservedSeat} from "./seat-reservation.js";
 
 const ROOM_CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -44,6 +45,9 @@ export class MultiplayerClient {
   async connect() {
     this.stopped = false;
     const generation = ++this.generation;
+    this.admissionAbort?.abort();
+    const admissionAbort = new AbortController();
+    this.admissionAbort = admissionAbort;
     clearTimeout(this.timer);
     const old = this.room; this.room = undefined;
     if (old) { old.reconnection.enabled = false; void old.leave(); }
@@ -55,9 +59,9 @@ export class MultiplayerClient {
       // Hobby may route a simultaneous code lookup to a fresh instance. Retry
       // only opted-in private games' missing-room responses; never create overflow rooms.
       for (let attempt = 0; ; attempt++) {
-        response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(this.options), signal: AbortSignal.timeout(15000) });
+        response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(this.options), signal: AbortSignal.any([admissionAbort.signal, AbortSignal.timeout(15000)]) });
         if (this.stopped || generation !== this.generation) return;
-        if (!['combat','space-invaders','ring-rivals','tetris-duel'].includes(this.game) || this.options.create === true || response.status !== 404 || attempt >= 3) break;
+        if (!['combat','bomberman','space-invaders','ring-rivals','tetris-duel'].includes(this.game) || this.options.create === true || response.status !== 404 || attempt >= 3) break;
         await response.arrayBuffer();
         await new Promise(resolve => setTimeout(resolve, (this.game === 'combat' ? [150,350,700][attempt] : 150 * 2 ** attempt)));
         if (this.stopped || generation !== this.generation) return;
@@ -80,11 +84,13 @@ export class MultiplayerClient {
         }
       }
       for (let attempt = 0; ; attempt++) {
-        try { room = await new Client(this.endpoint).consumeSeatReservation(reservation); break; }
+        try { room = await (['combat','bomberman','space-invaders','ring-rivals','tetris-duel'].includes(this.game)
+          ? consumeReservedSeat(this.endpoint,reservation,{signal:admissionAbort.signal})
+          : new Client(this.endpoint).consumeSeatReservation(reservation)); break; }
         catch (error) {
           // Keep the original reserved identity when a Hobby socket upgrade is
           // routed away from its owner. Re-admission would reserve a second seat.
-          if (!['combat','space-invaders','ring-rivals','tetris-duel'].includes(this.game)) throw error;
+          if (!['combat','bomberman','space-invaders','ring-rivals','tetris-duel'].includes(this.game)) throw error;
           if (attempt >= (this.game === 'combat' ? 2 : 3)) { error.expired = true; error.message = 'Could not attach to this room. Retry the code after the reserved seat expires, or create a new room.'; throw error; }
           await new Promise(resolve => setTimeout(resolve, (this.game === 'combat' ? 200 * (attempt + 1) : 150 * 2 ** attempt)));
           if (this.stopped || generation !== this.generation) return;
@@ -200,6 +206,7 @@ export class MultiplayerClient {
   send(type, message) { if (this.state.status === "connected") this.room?.send(type, message); }
   disconnect() {
     this.stopped = true; this.generation++;
+    this.admissionAbort?.abort();
     clearTimeout(this.timer);
     const room = this.room; this.room = undefined;
     if (room) { room.reconnection.enabled = false; void room.leave(); }
