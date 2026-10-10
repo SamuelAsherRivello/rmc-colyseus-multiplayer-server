@@ -9,7 +9,7 @@ on:
         description: Deployment target
         type: choice
         default: shared
-        options: [shared, asteroids]
+        options: [shared, asteroids, tetris]
 permissions:
   contents: write
 concurrency:
@@ -90,7 +90,7 @@ jobs:
           fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
   deploy:
-    if: inputs.target != 'asteroids'
+    if: inputs.target != 'asteroids' && inputs.target != 'tetris' && inputs.target != 'tetris'
     needs: prepare
     uses: ./.github/workflows/deploy.yml
     with:
@@ -103,9 +103,16 @@ jobs:
     with:
       ref: ${{ needs.prepare.outputs.commit }}
     secrets: inherit
+  deploy-tetris:
+    if: inputs.target == 'tetris'
+    needs: prepare
+    uses: ./.github/workflows/deploy-tetris.yml
+    with:
+      ref: ${{ needs.prepare.outputs.commit }}
+    secrets: inherit
   publish:
-    if: always() && needs.prepare.result == 'success' && (needs.deploy.result == 'success' || needs.deploy-asteroids.result == 'success')
-    needs: [prepare, deploy, deploy-asteroids]
+    if: always() && needs.prepare.result == 'success' && (needs.deploy.result == 'success' || needs.deploy-asteroids.result == 'success' || needs.deploy-tetris.result == 'success')
+    needs: [prepare, deploy, deploy-asteroids, deploy-tetris]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
