@@ -88,9 +88,3 @@ jobs:
       - name: Restore the previous production deployment if public verification fails
         if: ${{ failure() && steps.promote.outcome == 'success' }}
         run: vercel rollback --token="$VERCEL_TOKEN"
-
-
-
-
-
-

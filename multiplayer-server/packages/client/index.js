@@ -87,6 +87,10 @@ export class MultiplayerClient {
       }
       this.state.sessionId = room.sessionId;
       this.state.roomId = room.roomId;
+      for (const type of ['musicIntent','musicClockRequest','musicClockReply','musicCommit','musicSnapshot','musicSnapshotRequest','musicRejected']) {
+        room.onMessage(type, data => { this.state.musicMessage = data; this.emit(type); });
+      }
+      room.onMessage('musicEnded', data => { this.stopped = true; this.state.status = 'ended'; this.state.error = data.reason; this.emit('musicEnded'); });
       room.onMessage("identity", data => { this.state.seat = data?.seat ?? null; this.emit("identity"); });
       room.onMessage("snapshot", data => {
         if (this.game === "space-invaders") this.state.seat = data.seat ?? this.state.seat;
@@ -137,7 +141,8 @@ export class MultiplayerClient {
         this.schedule("Connection lost. Recovering your session…");
       });
       room.send("snapshot");
-      const heartbeat = ["space-invaders", "just-like-rabbits"].includes(this.game) ? setInterval(() => { if (!this.stopped && generation === this.generation) room.send("heartbeat"); }, this.game === "space-invaders" ? 1000 : 5000) : null;
+      const heartbeat = ["music-maker", "space-invaders", "just-like-rabbits"].includes(this.game) ? setInterval(() => { if (!this.stopped && generation === this.generation) room.send("heartbeat"); }, this.game === "space-invaders" ? 1000 : 5000) : null;
+
       const snapshotDeadline = setTimeout(() => {
         if (generation === this.generation && this.state.status !== "connected" && !this.stopped) {
           void room.leave();

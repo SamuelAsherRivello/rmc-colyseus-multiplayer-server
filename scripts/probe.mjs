@@ -27,3 +27,5 @@ try {
   clearTimeout(deadline);
 }
 
+
+if (!process.exitCode) await import('./music-probe.mjs');

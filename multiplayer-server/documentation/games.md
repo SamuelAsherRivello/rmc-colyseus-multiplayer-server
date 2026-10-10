@@ -10,6 +10,7 @@
 | Gauntlet Clone 3D | gauntlet-3d | 4 | 0.5.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) | — |
 | Just Like Rabbits | just-like-rabbits | 12 | next release | In development | — |
 | Multiplayer Draw | multiplayer-draw | 12 | 0.1.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) | — |
+| Music Maker Multiplayer | music-maker | 4 | next release | In development | Four-character private rooms; host loss ends session |
 | Neon Breaker Duo | neon-breaker-duo | 2 | 0.9.3+ | [Live playtest](https://samuelasherrivello.github.io/babylon-lite-arkanoid-clone/) | — |
 | Ring Rivals | ring-rivals | 2 | 0.9.3+ | [In development](https://samuelasherrivello.github.io/babylon-lite-ring-rivals/) | [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L39) · [Lifecycle](../src/private-code-room.ts#L14) |
 | Space Invaders | `space-invaders` | 1–4 | Participant-hosted simulation; private code, ordered inputs and checkpoint migration | In development | [Protocol](space-invaders.md) |
@@ -34,3 +35,7 @@ bomberman — 2–4 players, private codes, authoritative bomb arena, 15-second 
 
 `street-fighter-ii` supports private two-player invite rooms, server-authoritative 60 Hz combat, and per-seat 15-second recovery tokens. The client synchronizes game snapshots at 20 Hz and uses the shared combat rules from the versioned client package. Rooms and invites are in-memory and can be interrupted by process loss or serverless routing. [Demo in development](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/).
 
+
+## Music Maker Multiplayer
+
+`music-maker` uses private four-seat codes and a host-browser event ledger. The server assigns fictional names, numbers and colors, stamps input origins, bounds messages and accepts publications only from the creator. It does not simulate musical time. Host disconnect ends the room without migration or grace. Guest reconnect creates a fresh identity while the host remains active. Existing game contracts are unchanged.

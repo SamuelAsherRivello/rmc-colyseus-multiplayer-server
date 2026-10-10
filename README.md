@@ -16,6 +16,7 @@ This repository provides the shared multiplayer service and has no standalone de
 - [**Gauntlet Clone 3D**](https://samuelasherrivello.github.io/babylon-lite-gauntlet-clone-3d/) — team up to destroy summoning altars and escape a 3D dungeon.
 - **Just Like Rabbits** — shared rabbit observation habitat with participant-host migration. (In development.)
 - [**Multiplayer Draw**](https://samuelasherrivello.github.io/babylon-lite-multiplayer-draw/) — draw together from separate computers or browser tabs.
+- **Music Maker Multiplayer** — four-player host-simulated music sandbox with next-step local and three-second remote sounds. (In development.)
 - [**Neon Breaker Duo**](https://samuelasherrivello.github.io/babylon-lite-arkanoid-clone/) — co-operate to clear a neon brick field together. (In development.)
 - [**Ring Rivals**](https://samuelasherrivello.github.io/babylon-lite-ring-rivals/) — fight private online 1v1 boxing bouts from mirrored opponent-focused views. (In development.)
 - **Space Invaders** — Cooperative participant-hosted alien waves for one to four players. (In development.)
