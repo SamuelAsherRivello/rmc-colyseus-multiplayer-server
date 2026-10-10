@@ -49,6 +49,9 @@ test('Space Invaders private relay: recovery, capacity, isolation, journal and a
     b.send('hostSnapshot', checkpoint(b,seq,{ forged: true }));
     a.send('hostSnapshot', { ...checkpoint(a,seq), lastAppliedRelaySeq: 999999 });
     a.send('hostSnapshot', checkpoint(a,seq,{ tooLarge: 'x'.repeat(12500) }));
+    a.send('hostSnapshot', { ...checkpoint(a,seq), protocolVersion: 99 });
+    a.send('hostSnapshot', { ...checkpoint(a,seq), runId: 'stale-run' });
+    a.send('hostSnapshot', checkpoint(a,seq,{ invalid: Number.NaN }));
     await delay(150); assert.equal(b.state.transfer.sequence, committed);
     const authority = { epoch: b.state.epoch, runId: b.state.runId };
     b.send('action', { ...authority, sequence: 1, type: 'input', payload: { move: 1, fire: true }, sender: 'spoofed' });
@@ -57,6 +60,9 @@ test('Space Invaders private relay: recovery, capacity, isolation, journal and a
     const pendingSeq = a.state.lastAction.sequence;
     b.send('action', { ...authority, sequence: 1, type: 'input', payload: { move: -1, fire: false } });
     b.send('action', { ...authority, sequence: 2, type: 'input', payload: { move: 99, fire: false } });
+    b.send('action', { ...authority, sequence: 2.5, type: 'input', payload: { move: 1, fire: false } });
+    b.send('action', { ...authority, sequence: 3, type: 'input', payload: { move: 1, fire: 'yes' } });
+    b.send('action', { ...authority, sequence: 4, type: 'input', payload: { move: 1, fire: false, oversized: 'x'.repeat(300) } });
     await delay(150); assert.equal(a.state.lastAction.sequence, pendingSeq);
     const c = await join({ code: a.state.code }), d = await join({ code: a.state.code });
     assert.equal(c.state.status, 'connected'); assert.equal(d.state.status, 'connected');
@@ -89,5 +95,20 @@ test('Space Invaders private relay: recovery, capacity, isolation, journal and a
     const last = d.state.transfer.sequence;
     c.send('hostSnapshot',checkpoint(c,seq));
     await delay(100); assert.equal(d.state.transfer.sequence,last,'stale host published');
+    const stalled = await join({create:true}); await ready(stalled);
+    let inputs=0,exhausted=false;
+    const unsubscribe=stalled.subscribe((s,event)=>{if(event==='gameAction'&&s.lastAction.type==='input')inputs++;if(event==='recoveryError')exhausted=true;});
+    const sendInput=n=>stalled.send('action',{epoch:stalled.state.epoch,runId:stalled.state.runId,sequence:n,type:'input',payload:{move:0,fire:false}});
+    for(let n=1;n<=200;n++)sendInput(n);
+    await delay(150);assert.ok(inputs>0&&inputs<=60,'per-socket message budget must reject a burst');
+    for(let batch=0;batch<6&&!exhausted;batch++){
+      await delay(1100);
+      for(let n=0;n<50;n++)sendInput(201+batch*50+n);
+      await delay(100);
+    }
+    assert.equal(exhausted,true,'uncommitted action journal must fail visibly at its bounded capacity');
+    assert.equal(stalled.state.ready,false,'stalled journal pauses authority');
+    assert.ok(inputs<=255,'membership and inputs fit within the 256-action journal');
+    unsubscribe();
   } finally { for (const c of clients) c.disconnect(); await delay(300); server?.kill(); }
 });
