@@ -21,7 +21,7 @@ export default async function(req,res) {
   } catch(error) {
     if(error instanceof BlobPreconditionFailedError || (error instanceof BlobError && /already exists/i.test(error.message))) {
       res.statusCode=409;res.end(JSON.stringify({instance,conflict:true}));
-    }else{res.statusCode=500;res.end(JSON.stringify({instance,error:error.name}));}
+    }else{res.statusCode=500;res.end(JSON.stringify({instance,error:error.name,message:error.message}));}
   }
 }
 
