@@ -5,6 +5,11 @@ on:
       version:
         description: New semantic version, for example 0.1.0
         required: true
+      target:
+        description: Deployment target
+        type: choice
+        default: shared
+        options: [shared, asteroids]
 permissions:
   contents: write
 concurrency:
@@ -85,13 +90,22 @@ jobs:
           fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
   deploy:
+    if: inputs.target != 'asteroids'
     needs: prepare
     uses: ./.github/workflows/deploy.yml
     with:
       ref: ${{ needs.prepare.outputs.commit }}
     secrets: inherit
+  deploy-asteroids:
+    if: inputs.target == 'asteroids'
+    needs: prepare
+    uses: ./.github/workflows/deploy-asteroids.yml
+    with:
+      ref: ${{ needs.prepare.outputs.commit }}
+    secrets: inherit
   publish:
-    needs: [prepare, deploy]
+    if: always() && needs.prepare.result == 'success' && (needs.deploy.result == 'success' || needs.deploy-asteroids.result == 'success')
+    needs: [prepare, deploy, deploy-asteroids]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

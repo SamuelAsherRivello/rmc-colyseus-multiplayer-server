@@ -55,6 +55,10 @@ const games = new Map<string, GameRoom>([
   ["neon-breaker-duo", NeonBreakerRoom], ["ring-rivals", RingRivalsRoom],
   ["tetris-duel", TetrisDuelRoom], ["street-fighter-ii", StreetFighterRoom], ["just-like-rabbits", JustLikeRabbitsRoom],
 ]);
+// A dedicated free deployment isolates Asteroids from legacy process-local rooms.
+if (process.env.ASTEROIDS_ONLY === '1') {
+  for (const name of games.keys()) if (name !== 'asteroids-coop') games.delete(name);
+}
 let joining: Promise<unknown> = Promise.resolve();
 const streetFighterInvites = new Map<string, { roomId: string; tokens: Set<string> }>();
 const privateRoomCodeAttempts = new PrivateRoomCodeRateLimiter();
