@@ -18,7 +18,8 @@ export function attachAsteroidsSocket(
     busy = false,
     writing = false,
     lastRegistryCheck = 0,
-    lastRevisionCheck = 0;
+    lastRevisionCheck = 0,
+    lastHeartbeat = 0;
   let lastFrame = "",
     lastInput = new Map<string, number>(),
     inputSeq = -1,
@@ -203,11 +204,10 @@ export function attachAsteroidsSocket(
             { at: Date.now(), value },
             30,
           );
-          await continuity.store.set(
-            roomKey(registry, "frame"),
-            { at: Date.now() },
-            30,
-          );
+          if (Date.now() - lastHeartbeat >= 1000) {
+            lastHeartbeat = Date.now();
+            await continuity.store.set(roomKey(registry, "frame"), {at:lastHeartbeat}, 30);
+          }
           if (value.runId !== run) lastInput.clear();
           lastFrame = stamp;
           send("gameState", value);
@@ -249,3 +249,4 @@ export function attachAsteroidsSocket(
     stopped = true;
   });
 }
+
