@@ -51,7 +51,17 @@ export class MultiplayerClient {
     this.emit("status");
     let room;
     try {
-      const response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(this.options), signal: AbortSignal.timeout(15000) });
+      let response;
+      // Hobby may route a simultaneous code lookup to a fresh instance. Retry
+      // only Combat's missing-room response; never retry a create or full seat.
+      for (let attempt = 0; ; attempt++) {
+        response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(this.options), signal: AbortSignal.timeout(15000) });
+        if (this.stopped || generation !== this.generation) return;
+        if (this.game !== 'combat' || this.options.create === true || response.status !== 404 || attempt >= 3) break;
+        await response.arrayBuffer();
+        await new Promise(resolve => setTimeout(resolve, [150, 350, 700][attempt]));
+        if (this.stopped || generation !== this.generation) return;
+      }
       const payload = await response.json();
       const reservation = payload.reservation || payload;
       if (!response.ok) {
@@ -69,7 +79,17 @@ export class MultiplayerClient {
           if(this.game === "tetris-duel")try{globalThis.sessionStorage?.setItem(`rmc:${this.endpoint}:${this.game}:${payload.code}`,payload.token);}catch{}
         }
       }
-      room = await new Client(this.endpoint).consumeSeatReservation(reservation);
+      for (let attempt = 0; ; attempt++) {
+        try { room = await new Client(this.endpoint).consumeSeatReservation(reservation); break; }
+        catch (error) {
+          // Keep the original reserved identity when a Hobby socket upgrade is
+          // routed away from its owner. Re-admission would reserve a second seat.
+          if (this.game !== 'combat') throw error;
+          if (attempt >= 2) { error.expired = true; error.message = 'Could not attach to this room. Retry the code after the reserved seat expires, or create a new room.'; throw error; }
+          await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
+          if (this.stopped || generation !== this.generation) return;
+        }
+      }
       const recoversSeat = this.game === 'combat' || this.game === 'bomberman' || this.game === 'ring-rivals' || this.game === 'tetris-duel';
       room.reconnection.enabled = recoversSeat;
       if (recoversSeat) {
