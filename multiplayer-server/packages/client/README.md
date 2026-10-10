@@ -166,3 +166,7 @@ Subscribe to `gameAction`, `hostTransfer`, `presence`, `snapshot`, `gameState`, 
 A successor restores `transfer.state.state`, replays the unacknowledged `journal`, and sends `hostReady` with `{epoch}`. Only that ready host may publish `hostSnapshot` with `{protocolVersion:1,epoch,runId,tick,lastAppliedRelaySeq,random,state}`. Checkpoints are bounded to 12 KiB and the journal to 256 actions. A stalled journal emits `recoveryError` and pauses authority. The relay does not simulate game rules. See the [complete protocol](../../documentation/space-invaders.md).
 
 Rooms are process-local on the free Vercel Hobby deployment. Participant-host migration preserves committed state; it does not recover a lost backend instance. Missing checkpoints and expired rooms require visible recovery, without silent offline simulation or life resets.
+
+### Bounded private relay admission
+
+Combat, Space Invaders, Ring Rivals and Tetris retry transient missing-room lookups and socket attachment within a bounded budget. Socket retries reuse the original reservation and identity; they do not reserve extra seats or create replacement rooms. Full rooms, malformed codes and invalid private tokens remain terminal. Leaving cancels outstanding retries. These retries do not promise cross-instance durability.

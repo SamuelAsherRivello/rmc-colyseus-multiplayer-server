@@ -57,7 +57,7 @@ export class MultiplayerClient {
       for (let attempt = 0; ; attempt++) {
         response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(this.options), signal: AbortSignal.timeout(15000) });
         if (this.stopped || generation !== this.generation) return;
-        if (!['combat','space-invaders'].includes(this.game) || this.options.create === true || response.status !== 404 || attempt >= 3) break;
+        if (!['combat','space-invaders','ring-rivals','tetris-duel'].includes(this.game) || this.options.create === true || response.status !== 404 || attempt >= 3) break;
         await response.arrayBuffer();
         await new Promise(resolve => setTimeout(resolve, (this.game === 'combat' ? [150,350,700][attempt] : 150 * 2 ** attempt)));
         if (this.stopped || generation !== this.generation) return;
@@ -84,7 +84,7 @@ export class MultiplayerClient {
         catch (error) {
           // Keep the original reserved identity when a Hobby socket upgrade is
           // routed away from its owner. Re-admission would reserve a second seat.
-          if (!['combat','space-invaders'].includes(this.game)) throw error;
+          if (!['combat','space-invaders','ring-rivals','tetris-duel'].includes(this.game)) throw error;
           if (attempt >= (this.game === 'combat' ? 2 : 3)) { error.expired = true; error.message = 'Could not attach to this room. Retry the code after the reserved seat expires, or create a new room.'; throw error; }
           await new Promise(resolve => setTimeout(resolve, (this.game === 'combat' ? 200 * (attempt + 1) : 150 * 2 ** attempt)));
           if (this.stopped || generation !== this.generation) return;
