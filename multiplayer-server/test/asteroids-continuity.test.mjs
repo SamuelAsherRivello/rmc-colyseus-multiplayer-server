@@ -120,3 +120,20 @@ test("out-of-order membership notifications are immutable by registry revision",
   );
   assert.equal(latest.hostId, host.id);
 });
+
+test('one generation can claim exactly one socket across independent instances', async () => {
+  const {a,b}=setup(); const host=await a.admit({create:true,code:'ROCK'});
+  const attempts=await Promise.allSettled([a.authenticate(host.code,host.token,host.generation),b.authenticate(host.code,host.token,host.generation)]);
+  assert.equal(attempts.filter(result=>result.status==='fulfilled').length,1);
+  assert.equal(attempts.find(result=>result.status==='rejected').reason.status,403);
+});
+test('abandoned guest admissions release their seats without inheriting an identity', async () => {
+  const {a,b,store}=setup(); const host=await a.admit({create:true,code:'ROCK'});
+  const guests=await Promise.all([a.admit({code:'ROCK'}),b.admit({code:'ROCK'}),a.admit({code:'ROCK'})]);
+  const later=Date.now()+16000; b.now=()=>later;
+  const record=(await b.current('ROCK')).value; await store.set(roomKey(record,'frame'),{at:later});
+  const newcomer=await b.admit({code:'ROCK'});
+  assert.equal((await b.current('ROCK')).value.identities.filter(p=>p.connected).length,2);
+  assert.ok(!guests.some(g=>g.id===newcomer.id));
+  await assert.rejects(()=>a.authenticate(guests[0].code,guests[0].token,guests[0].generation),{status:403});
+});

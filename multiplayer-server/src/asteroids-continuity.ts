@@ -7,6 +7,7 @@ export type Identity = {
   generation: string;
   connected: boolean;
   claimed?: boolean;
+  admittedAt?: number;
 };
 export type Registry = {
   epoch: string;
@@ -79,6 +80,8 @@ export class AsteroidsContinuity {
   }) {
     if (!data || typeof data !== "object")
       throw new RelayError(400, "Choose create or enter a room code");
+    if (data.code !== undefined && typeof data.code !== "string")
+      throw new RelayError(400, "Enter a four-character room code");
     let code = data.code?.trim().toUpperCase();
     if (code !== undefined && !/^[A-Z0-9]{4}$/.test(code))
       throw new RelayError(400, "Enter a four-character room code");
@@ -98,6 +101,7 @@ export class AsteroidsContinuity {
         number: 1,
         generation: randomUUID(),
         connected: true,
+        admittedAt: this.now(),
       };
       for (let tries = 0; ; tries++) {
         const candidate =
@@ -125,6 +129,17 @@ export class AsteroidsContinuity {
       token ??= randomUUID();
       const hash = identityHash(token);
       r = await this.mutate(code, (value) => {
+        for (const pending of value.identities) {
+          if (
+            pending.connected &&
+            !pending.claimed &&
+            this.now() - (pending.admittedAt ?? value.created) > 15000 &&
+            pending.id !== value.hostId
+          ) {
+            pending.connected = false;
+            value.serial++;
+          }
+        }
         let p = value.identities.find((p) => p.hash === hash);
         if (supplied && !p)
           throw new RelayError(403, "Invalid recovery identity");
@@ -172,6 +187,7 @@ export class AsteroidsContinuity {
         p.connected = true;
         p.generation = randomUUID();
         p.claimed = false;
+        p.admittedAt = this.now();
       });
     }
     const p = r!.identities.find((p) => p.hash === identityHash(token!))!;
@@ -188,13 +204,21 @@ export class AsteroidsContinuity {
   }
   async authenticate(code: string, token: string, generation: string) {
     const hash = identityHash(token);
-    const r = await this.mutate(code, value => {
-      const p = value.identities.find(p => p.hash === hash);
-      if (!p?.connected || p.generation !== generation || p.claimed)
-        throw new RelayError(403, 'Connection expired or already claimed');
+    const r = await this.mutate(code, (value) => {
+      const p = value.identities.find((p) => p.hash === hash);
+      if (
+        !p?.connected ||
+        p.generation !== generation ||
+        p.claimed ||
+        this.now() - (p.admittedAt ?? value.created) > 15000
+      )
+        throw new RelayError(403, "Connection expired or already claimed");
       p.claimed = true;
     });
-    return { registry: r, identity: r.identities.find(p => p.hash === hash)! };
+    return {
+      registry: r,
+      identity: r.identities.find((p) => p.hash === hash)!,
+    };
   }
   async assertAlive(r: Registry) {
     const frame = await this.store.get(roomKey(r, "frame"));
@@ -254,4 +278,3 @@ export class MemoryContinuityStore implements ContinuityStore {
     this.cache.set(key, structuredClone(value));
   }
 }
-
