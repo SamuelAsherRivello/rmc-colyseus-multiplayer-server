@@ -238,8 +238,8 @@ export function attachAsteroidsSocket(
           writing = false;
         }
       }
-    } catch {
-      if (!identity) socket.close(4003, "Invalid authentication");
+    } catch (error) {
+      if (!identity) { const reason = error instanceof RelayError ? error.message : (error as Error).name; console.error("Asteroids authentication rejected", reason); socket.close(4003, reason.slice(0,100)); }
       else terminal("Relay request failed");
     }
   });
@@ -254,4 +254,5 @@ export function attachAsteroidsSocket(
     stopped = true;
   });
 }
+
 
