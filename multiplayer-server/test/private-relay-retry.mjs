@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {MultiplayerClient} from '../packages/client/index.js';
 import {Client} from '@colyseus/sdk';
 
-for(const game of ['ring-rivals','tetris-duel']){
+for(const game of ['ring-rivals','tetris-duel','music-maker']){
  test(`${game} retries missing private invitation but never retries capacity or invalid tokens`,async()=>{
   const original=globalThis.fetch;
   try{

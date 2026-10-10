@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { MultiplayerClient } from '../packages/client/index.js';
+import { Client } from '@colyseus/sdk';
 const endpoint = process.env.SERVER_URL || 'http://127.0.0.1:2696';
 async function until(fn, label, ms = 20000) { const end = Date.now()+ms; while (!fn()) { if(Date.now()>end) throw Error(label); await delay(25); } }
 test('music private room relay: identity, host-only publication, clock, capacity, guest rejoin, isolation and host end', {timeout:90000}, async () => {
@@ -10,6 +11,16 @@ test('music private room relay: identity, host-only publication, clock, capacity
  async function join(options) { const c=new MultiplayerClient(endpoint,'music-maker',options); clients.push(c); c.events=[]; c.subscribe((s,e)=>{if(e.startsWith('music'))c.events.push({type:e,data:structuredClone(s.musicMessage)});}); void c.connect(); await until(()=>['connected','full','error'].includes(c.state.status),'music admission'); return c; }
  try {
   if(!process.env.SERVER_URL) { server=spawn(process.execPath,['--import','tsx','server.ts'],{env:{...process.env,PORT:'2696'},stdio:'ignore',windowsHide:true}); let ready=false; for(let i=0;i<100;i++){try{ready=(await fetch(endpoint+'/api/health')).ok;}catch{} if(ready)break;await delay(100);} assert.ok(ready); }
+  // Reserve the creator but deliberately attach a guest before its socket.
+  const admission=await (await fetch(endpoint+'/api/join/music-maker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({create:true})})).json();
+  const earlyGuest=await join({code:admission.code});
+  assert.equal(earlyGuest.state.status,'connected');
+  assert.equal(earlyGuest.state.hostId,admission.reservation.sessionId);
+  assert.equal(earlyGuest.state.players.find(p=>p.id===earlyGuest.state.sessionId).number,2);
+  const creator=await new Client(endpoint).consumeSeatReservation(admission.reservation);
+  await until(()=>earlyGuest.state.players.length===2,'creator attached after guest');
+  assert.equal(earlyGuest.state.players.find(p=>p.id===creator.sessionId).number,1);
+  await creator.leave();await until(()=>earlyGuest.state.status==='ended','reserved creator loss ends room');
   const a=await join({create:true}), b=await join({code:a.state.code});
   assert.equal(a.state.status,'connected'); assert.equal(b.state.roomId,a.state.roomId); assert.equal(b.state.hostId,a.state.sessionId);
   await until(()=>a.state.players.length===2,'roster'); assert.deepEqual(a.state.players.map(p=>p.number),[1,2]); assert.ok(a.state.players.every(p=>p.name));

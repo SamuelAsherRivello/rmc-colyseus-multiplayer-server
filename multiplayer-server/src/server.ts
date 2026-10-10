@@ -94,7 +94,10 @@ async function reserveDungeon(body:unknown, game = 'gungeon') {
       try { code = requested ?? generatePrivateRoomCode(isTaken, legacyBomberman ? BOMBERMAN_ROOM_CODE_LENGTH : 4); }
       catch { throw new AdmissionError(503,'Room codes are temporarily unavailable. Try again.'); }
       const room=await matchMaker.createRoom(game,{code});
-      return {reservation:await matchMaker.joinById(room.roomId),code};
+      const reservation=await matchMaker.joinById(room.roomId);
+      const local=matchMaker.getLocalRoomById(room.roomId);
+      if(local instanceof MusicRoom)local.reserveHost(reservation.sessionId);
+      return {reservation,code};
     }
     const code = normalizePrivateRoomCode(data.code, acceptedLengths);
     if(!code)throw new AdmissionError(400,codeError);

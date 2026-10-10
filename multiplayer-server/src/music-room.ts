@@ -21,6 +21,8 @@ export class MusicRoom extends Room {
   private lastHostSeen = Date.now();
   private limits = new Map<string, { at: number; count: number; sequence: number }>();
 
+  reserveHost(id: string) { this.hostId = id; }
+
   onCreate(options: { code: string }) {
     this.code = options.code;
     this.setMetadata({ code: this.code });
@@ -61,7 +63,9 @@ export class MusicRoom extends Room {
   onJoin(client: Client) {
     if (this.ended) { void client.leave(); return; }
     const occupied = new Set([...this.players.values()].map(p => p.number));
-    let number = 1; while (occupied.has(number)) number++;
+    // Seat 1 belongs to the creator even when a guest's socket attaches first.
+    let number = client.sessionId === this.hostId ? 1 : this.hostId ? 2 : 1;
+    while (occupied.has(number)) number++;
     if (!this.hostId) this.hostId = client.sessionId;
     const seed = parseInt(randomUUID().slice(0, 8), 16);
     this.players.set(client.sessionId, { id: client.sessionId, number, name: `${adjectives[seed % 8]} ${animals[(seed >>> 4) % 8]}`, color: colors[number - 1], host: client.sessionId === this.hostId });
