@@ -45,6 +45,9 @@ jobs:
       - run: npm ci
       - run: npm run check:docs
       - run: npm run typecheck
+      # Version preparation may safely rebase over concurrent main changes.
+      # Verify the final immutable source, including any such changes.
+      - run: npm test
       - name: Stage the already regression-tested release source
         id: deploy
         run: |
