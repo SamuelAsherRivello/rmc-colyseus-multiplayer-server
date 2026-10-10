@@ -39,11 +39,12 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - name: Require the selected source to be the current main commit
+      - name: Require the selected source to be in main history
         run: |
-          git fetch origin main --no-tags --depth=1
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor HEAD origin/main
       - run: npm ci
+      - run: npm run check:docs
       - run: npm run typecheck
       - run: npm test
       - name: Stage the selected source with production settings

@@ -17,3 +17,6 @@ Process-local routing, replacement and socket-age can lose rooms and scores. UI 
 Add rules/simulation/room, compatible SDK support and package export; run deterministic tests and integration/regressions; release through checked-in staged Vercel workflow with live probes and rollback. Pin the resulting asset in the game only after public verification.
 ## Open Questions
 None blocking. User selected all match policies and authorized shipping; tuning is documented as adaptation rather than historical source fact.
+
+## Concurrent main release handling
+Multiple authorized projects share this backend. Release preparation retries a rejected normal push by rebasing only its unpublished version commit onto main (three attempts, no force). Deployment then runs clean installation, docs/typecheck and the full regression suite on that exact resulting commit before staging. Deployment/publication require that commit to remain in main history rather than require main to stop advancing. The serial backend-release workflow, exact version checks, staged game probes, four-minute relay checks, stable probes and rollback remain intact. No untested source is published merely because a version push succeeded.
