@@ -8,6 +8,7 @@ Rivello Multimedia Consulting (RMC), led by [Samuel Asher Rivello](https://www.s
 
 This repository provides the shared multiplayer service and has no standalone demo. Play the projects that use it:
 
+- **Asteroids Multiplayer Clone** — fixed-host 1–4-player cooperative asteroid waves, personal lives and spectators. (In development.)
 - [**Bomberman Clone**](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/) — private competitive bomb arena with optional growing plants that block movement.
 - **Combat Clone** — four-tank free-for-all with 1–4 humans, fair CPU fill and Classic/Ricochet shots. (In development.)
 - [**Dust Circuit Rally**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race four off-road trucks in a fixed-camera landscape circuit with solo, local and online modes.
@@ -177,4 +178,3 @@ Deployment explicitly assigns the canonical public alias after a tagged checkout
 ## Enter the Gungeon Clone
 
 [Live demo](https://samuelasherrivello.github.io/babylon-lite-enter-the-gungeon-clone/) — [Source](https://github.com/SamuelAsherRivello/babylon-lite-enter-the-gungeon-clone). `gungeon` adds private four-character rooms for 1–4 players, readiness, authoritative arena movement/combat, dodge invulnerability, three weapon patterns, shared upgrade rewards, revival and wave/boss progression. Existing shared-client callers remain compatible; optional admission options support create/join. Two-client integration and deterministic rule tests are included in local and live deployment checks. Fresh reconnect and in-memory hosting limits above apply.
-

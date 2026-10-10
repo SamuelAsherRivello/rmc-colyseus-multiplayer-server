@@ -52,6 +52,7 @@ Do not put credentials in frontend configuration. Persistent-user-rejoins is def
 
 This package is part of **RMC Colyseus Multiplayer Server**, which has no standalone demo. These consuming projects use the shared service:
 
+- **Asteroids Multiplayer Clone** — fixed-host 1–4-player cooperative asteroid waves, personal lives and spectators. (In development.)
 - [**Bomberman Clone**](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/) — private competitive bomb arena with optional growing plants that block movement.
 - **Combat Clone** — four-tank free-for-all with 1–4 humans, fair CPU fill and Classic/Ricochet shots. (In development.)
 - [**Dust Circuit Rally**](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) — race four off-road trucks in a fixed-camera landscape circuit with solo, local and online modes.
@@ -143,8 +144,13 @@ Matches are best of three, with 60-second rounds, knockout and health decisions,
 
 Create `new MultiplayerClient(endpoint, "music-maker", {create:true})` or join with `{code:"AB12"}`. Four players; `state.hostId` owns simulation. Subscribe to `musicIntent`, `musicClockRequest`, `musicClockReply`, `musicCommit`, `musicSnapshotRequest`, `musicSnapshot`, `musicRejected`, and `musicEnded`; payload is `state.musicMessage`. Use `send(type,payload)`. A host sends commits `{epoch,sequence,origin,step,sound,deadline}`; sound is kick/snare/hat/tone. Intents contain epoch/sequence/step/sound and receive a relay-stamped origin. Clock requests contain request/sent and receive origin; host replies with target/request/sent/received/hostNow/start/epoch. Snapshots contain target/epoch/start/hostNow/sequence/events, at most 112 pending events and 14 KiB encoded. Guest messages are bounded at 32/s; host output aggregation at 128/s. Heartbeats run every five seconds. Host loss emits musicEnded and ends the session, without retrying into a new room. Origins play at the source deadline, all other listeners at deadline+3000 ms. Browser host is authoritative; relay never creates beats.
 
+
 ## Combat Clone
 
-Use `new MultiplayerClient(endpoint, "combat", {create:true,code:suggestRoomCode()})`, or `{code}` to join. Import `ARENAS`, `TUNING` and `moveTank` from `@rmc/multiplayer-client/combat` for shared local prediction. See the [complete protocol](../../documentation/combat.md).
+Use `new MultiplayerClient(endpoint, "combat", {create:true,code:suggestRoomCode()})`, or `{code}` to join. Import `ARENAS`, `TUNING` and `moveTank` from `@rmc/multiplayer-client/combat` for browser-safe local prediction. See the [complete protocol](../../documentation/combat.md).
 
-Combat differs from generic code-rejoin guidance: only same-session SDK recovery preserves a protected seat for 15 seconds. A fresh code join cannot steal a recovery reservation. Midmatch arrivals observe until the next match. Exactly four stable tanks remain with CPU fill. Existing Vercel hosting is process-local best effort; expired rooms require recreation and scores may be lost.
+Combat differs from the generic code-rejoin guidance above: only SDK recovery preserves a protected seat for 15 seconds. A fresh room-code join cannot steal a recovering seat and is a new anonymous participant. Midmatch arrivals wait until the next match. Every match retains four slots with CPU fill. The existing Vercel endpoint is best effort and process-local; an expired room requires recreation and scores may be lost.
+
+## Asteroids Multiplayer Clone (next release)
+
+Import the additive Asteroids rules and connection APIs. See the [Asteroids authority, recovery, tuning and hosting contract](../../documentation/asteroids.md). Public player IDs are distinct from private recovery tokens; guest hot drop frees a seat while the host retains personal lives. Host loss is terminal. This extension is unreleased pending sustained-hosting verification.

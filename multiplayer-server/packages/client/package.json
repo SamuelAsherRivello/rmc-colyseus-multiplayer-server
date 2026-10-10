@@ -11,6 +11,8 @@
     "./bomberman": "./bomberman-rules.js",
     "./bomberman-cpu": "./bomberman-cpu.js",
     "./combat": "./combat-rules.js",
+    "./asteroids": "./asteroids-rules.js",
+    "./asteroids-connection": "./asteroids-connection.js",
     "./tetris-duel": "./tetris-duel-rules.js"
   },
   "files": [
@@ -24,6 +26,9 @@
     "bomberman-rules.js",
     "bomberman-cpu.js",
     "combat-rules.js",
+    "asteroids-rules.js",
+    "asteroids-connection.js",
+    "asteroids-shared-connection.js",
     "tetris-duel-rules.js"
   ],
   "dependencies": {

@@ -2,6 +2,7 @@
 
 | Game | Room key | Capacity | Client package | Frontend | Private-room workflow |
 |---|---|---|---|---|---|
+| Asteroids Multiplayer Clone | asteroids-coop | 4 | next release | In development | [Rules/API](asteroids.md) · fixed host, session-scoped private guest recovery |
 | Bomberman Clone | bomberman | 4 | 0.9.2+ | [Multiplayer preview](https://samuelasherrivello.github.io/babylon-lite-bomberman-clone/?mode=online) | Optional growing plants block movement without damage. [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L39) · [Lifecycle](../src/private-code-room.ts#L14) |
 | Combat Clone | combat | 4 humans / 4 tanks | next release | In development | [Protocol](combat.md) · [Room](../src/combat-room.ts) |
 | Dust Circuit Rally | dust-circuit-rally | 4 | 0.6.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-super-offroad-clone/) | — |
@@ -41,6 +42,7 @@ bomberman — 2–4 players, private codes, authoritative bomb arena, 15-second 
 ## Music Maker Multiplayer
 
 `music-maker` uses private four-seat codes and a host-browser event ledger. The server assigns fictional names, numbers and colors, stamps input origins, bounds messages and accepts publications only from the creator. It does not simulate musical time. Host disconnect ends the room without migration or grace. Guest reconnect creates a fresh identity while the host remains active. Existing game contracts are unchanged.
+
 
 ## Tetris Multiplayer Clone
 

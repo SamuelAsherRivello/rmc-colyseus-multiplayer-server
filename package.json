@@ -19,6 +19,8 @@
     "@colyseus/core": "0.17.44",
     "@colyseus/schema": "4.0.26",
     "@colyseus/ws-transport": "0.17.13",
+    "@vercel/blob": "2.8.1",
+    "@vercel/functions": "3.9.11",
     "express": "4.22.3"
   },
   "devDependencies": {

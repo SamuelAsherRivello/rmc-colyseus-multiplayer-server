@@ -31,9 +31,24 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
-type GameRoom = typeof CombatRoom | typeof SpaceInvadersRoom | typeof MusicRoom | typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom | typeof RingRivalsRoom | typeof StreetFighterRoom | typeof JustLikeRabbitsRoom | typeof TetrisDuelRoom;
+import { AsteroidsRoom } from './asteroids-room.js';
+import { AsteroidsContinuity, RelayError } from "./asteroids-continuity.js";
+import { VercelAsteroidsStore } from "./asteroids-vercel-store.js";
+import { attachAsteroidsSocket } from "./asteroids-shared-socket.js";
+const asteroidsContinuity = process.env.BLOB_READ_WRITE_TOKEN ? new AsteroidsContinuity(new VercelAsteroidsStore()) : undefined;
+class GameWebSocketTransport extends WebSocketTransport {
+  async onConnection(socket: any, request: any) {
+    if (request.url?.split("?")[0] === "/asteroids") {
+      if (!asteroidsContinuity) { socket.close(1013, "Shared relay unavailable"); return; }
+      socket.pingCount = 0; socket.on("pong", () => { socket.pingCount = 0; });
+      attachAsteroidsSocket(socket, asteroidsContinuity); return;
+    }
+    return super.onConnection(socket, request);
+  }
+}
+type GameRoom = typeof AsteroidsRoom | typeof CombatRoom | typeof SpaceInvadersRoom | typeof MusicRoom | typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom | typeof RingRivalsRoom | typeof StreetFighterRoom | typeof JustLikeRabbitsRoom | typeof TetrisDuelRoom;
 const games = new Map<string, GameRoom>([
-  ["music-maker", MusicRoom], ["space-invaders", SpaceInvadersRoom], ["combat", CombatRoom], ["bomberman", BombermanRoom], ["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom],
+  ["asteroids-coop", AsteroidsRoom], ["music-maker", MusicRoom], ["space-invaders", SpaceInvadersRoom], ["combat", CombatRoom], ["bomberman", BombermanRoom], ["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom],
 
   ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom],
   ["gauntlet-3d", GauntletRoom], ["dust-circuit-rally", RacingRoom],
@@ -141,6 +156,34 @@ async function reserveStreetFighter(body: unknown) {
   });
   joining = pending; return pending;
 }
+async function reserveAsteroids(body: unknown) {
+  if (asteroidsContinuity) return asteroidsContinuity.admit(body as Parameters<AsteroidsContinuity["admit"]>[0]);
+  if (process.env.VERCEL) throw new AdmissionError(503, "Shared Asteroids relay is not configured");
+  const data = body as {create?:boolean;code?:string;identityToken?:string};
+  if(!data || typeof data!=='object')throw new AdmissionError(400,'Choose create or enter a room code');
+  const pending=joining.catch(()=>undefined).then(async()=>{
+    const rooms=await matchMaker.query({name:'asteroids-coop'});
+    const requested=data.code===undefined?undefined:normalizePrivateRoomCode(data.code);
+    if(data.code!==undefined&&!requested)throw new AdmissionError(400,'Enter a four-character room code');
+    if(data.create===true){
+      if(rooms.length>=50)throw new AdmissionError(503,'Too many rooms');
+      const taken=(code:string)=>rooms.some(r=>r.metadata?.code===code);
+      if(requested&&taken(requested))throw new AdmissionError(409,'That room code is already in use','code_in_use');
+      const code=requested??generatePrivateRoomCode(taken),token=randomUUID();
+      const listing=await matchMaker.createRoom('asteroids-coop',{code,creatorToken:token});
+      const room=matchMaker.getLocalRoomById(listing.roomId) as AsteroidsRoom;room.registerCreator();
+      return {code,token,id:room.identityFor(token),reservation:await matchMaker.joinById(listing.roomId,{identityToken:token})};
+    }
+    if(!requested)throw new AdmissionError(400,'Enter a room code');
+    const listing=rooms.find(r=>r.metadata?.code===requested);
+    if(!listing)throw new AdmissionError(404,'Room expired or code not found');
+    const room=matchMaker.getLocalRoomById(listing.roomId);
+    if(!(room instanceof AsteroidsRoom))throw new AdmissionError(503,'Room is unavailable on this instance');
+    if(room.clients.length>=4||room.locked)throw new FullRoomError();
+    let token:string;try{token=room.issueIdentity(data.identityToken);}catch{throw new AdmissionError(403,'Recovery identity is invalid or unavailable');}
+    return {code:requested,token,id:room.identityFor(token),reservation:await matchMaker.joinById(listing.roomId,{identityToken:token})};
+  });joining=pending;return pending;
+}
 async function reserveTetris(body: unknown) {
   const data = body as {create?:boolean;code?:string;reconnectToken?:string};
   if (!data || typeof data !== "object") throw new AdmissionError(400,"Choose create or enter a room code");
@@ -229,7 +272,7 @@ class ProbeRoom extends Room {
 }
 const httpServer = createServer();
 const gameServer = new Server({
-  transport: new WebSocketTransport({ server: httpServer, maxPayload: 16384, pingInterval: 3000, pingMaxRetries: 2 }),
+  transport: new GameWebSocketTransport({ server: httpServer, maxPayload: 16384, pingInterval: 3000, pingMaxRetries: 2 }),
   express: (app) => {
     app.set("trust proxy", 1);
 
@@ -245,14 +288,14 @@ const gameServer = new Server({
       if (!games.has(req.params.game)) { res.status(404).json({ error: "Unknown game" }); return; }
       try {
         const game = req.params.game;
-        if (["combat", "space-invaders", "music-maker", "gungeon", "bomberman", "ring-rivals", "street-fighter-ii", "tetris-duel"].includes(game) && (req.body as { create?: boolean })?.create !== true) {
+        if (["asteroids-coop", "combat", "space-invaders", "music-maker", "gungeon", "bomberman", "ring-rivals", "street-fighter-ii", "tetris-duel"].includes(game) && (req.body as { create?: boolean })?.create !== true) {
           if (!privateRoomCodeAttempts.take(req.ip || req.socket.remoteAddress || "unknown")) {
             res.setHeader("Retry-After", "60");
             res.status(429).json({ error: "Too many room-code attempts. Try again shortly.", errorCode: "rate_limited" });
             return;
           }
         }
-        const reservation = game === "space-invaders" ? await reserveInvaders(req.body) : game === "tetris-duel" ? await reserveTetris(req.body) : game === "street-fighter-ii"
+        const reservation = game === "asteroids-coop" ? await reserveAsteroids(req.body) : game === "space-invaders" ? await reserveInvaders(req.body) : game === "tetris-duel" ? await reserveTetris(req.body) : game === "street-fighter-ii"
           ? await reserveStreetFighter(req.body)
           : ["combat", "music-maker", "gungeon", "bomberman", "ring-rivals"].includes(game)
             ? await reserveDungeon(req.body, game)
@@ -260,7 +303,8 @@ const gameServer = new Server({
         res.json(reservation);
       }
       catch (error) {
-        if (error instanceof AdmissionError) res.status(error.status).json({ error: error.message, ...(error.errorCode ? { errorCode: error.errorCode } : {}) });
+        if (error instanceof RelayError) res.status(error.status).json({ error: error.message });
+        else if (error instanceof AdmissionError) res.status(error.status).json({ error: error.message, ...(error.errorCode ? { errorCode: error.errorCode } : {}) });
         else if (error instanceof FullRoomError) res.status(409).json({ error: "Room full" });
         else { console.error("Join failed", (error as Error).message); res.status(503).json({ error: "Room temporarily unavailable" }); }
       }
