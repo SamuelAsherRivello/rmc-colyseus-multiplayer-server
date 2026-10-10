@@ -81,6 +81,10 @@ export class MultiplayerClient {
       this.room = room;
       this.state.sessionId = room.sessionId;
       this.state.roomId = room.roomId;
+      for (const type of ['musicIntent','musicClockRequest','musicClockReply','musicCommit','musicSnapshot','musicSnapshotRequest','musicRejected']) {
+        room.onMessage(type, data => { this.state.musicMessage = data; this.emit(type); });
+      }
+      room.onMessage('musicEnded', data => { this.stopped = true; this.state.status = 'ended'; this.state.error = data.reason; this.emit('musicEnded'); });
       room.onMessage("identity", data => { this.state.seat = data?.seat ?? null; this.emit("identity"); });
       room.onMessage("snapshot", data => {
         this.state.players = data.players;
@@ -127,7 +131,7 @@ export class MultiplayerClient {
         this.schedule("Connection lost. Rejoining as a new player…");
       });
       room.send("snapshot");
-      const heartbeat = this.game === "just-like-rabbits" ? setInterval(() => room.send("heartbeat"), 5000) : null;
+      const heartbeat = (this.game === "just-like-rabbits" || this.game === "music-maker") ? setInterval(() => room.send("heartbeat"), 5000) : null;
       const snapshotDeadline = setTimeout(() => {
         if (generation === this.generation && this.state.status !== "connected" && !this.stopped) {
           void room.leave();
