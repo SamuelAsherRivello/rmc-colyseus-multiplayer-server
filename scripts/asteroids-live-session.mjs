@@ -45,9 +45,9 @@ export async function verifyAsteroidsSession(endpoint, seconds = 8) {
   }
   const hostData = await admission({ create: true });
   assert.equal(hostData.transport, "asteroids-shared-v1");
-  await admission({create:true,code:hostData.code},409);
-  await admission({code:'BAD'},400);
-  await admission({code:hostData.code,identityToken:hostData.id},403);
+  await admission({ create: true, code: hostData.code }, 409);
+  await admission({ code: "BAD" }, 400);
+  await admission({ code: hostData.code, identityToken: hostData.id }, 403);
   const host = await connectSharedAsteroids(base, hostData, {
     onPresence: (p) => {
       if (p.serial === serial) return;
@@ -138,16 +138,25 @@ export async function verifyAsteroidsSession(endpoint, seconds = 8) {
         latest.players.find((p) => p[0] === guestData.id)?.[2] === 0,
       "Guest recovery reset lives",
     );
-    const extras=[];
-    for(let i=0;i<2;i++) {
-      const data=await admission({code:hostData.code});
-      const extra=await connectSharedAsteroids(base,data,{onEnded:()=>{}});
-      extras.push(extra);connections.push(extra);
+    const extras = [];
+    for (let i = 0; i < 2; i++) {
+      const data = await admission({ code: hostData.code });
+      const extra = await connectSharedAsteroids(base, data, {
+        onEnded: () => {},
+      });
+      extras.push(extra);
+      connections.push(extra);
     }
-    await until(()=>world.players.filter(p=>p.connected).length===4,'Four-player capacity did not synchronize');
-    await admission({code:hostData.code},409);
-    for(const extra of extras)extra.leave();
-    await until(()=>world.players.filter(p=>p.connected).length===2,'Guest drops did not release extra seats');
+    await until(
+      () => world.players.filter((p) => p.connected).length === 4,
+      "Four-player capacity did not synchronize",
+    );
+    await admission({ code: hostData.code }, 409);
+    for (const extra of extras) extra.leave();
+    await until(
+      () => world.players.filter((p) => p.connected).length === 2,
+      "Guest drops did not release extra seats",
+    );
     const start = Date.now();
     let lastLog = start;
     while (Date.now() - start < seconds * 1000) {
@@ -201,4 +210,3 @@ if (process.argv[1]?.endsWith("asteroids-live-session.mjs"))
     process.env.SERVER_URL,
     Number(process.env.LONG_SESSION_SECONDS || 600),
   );
-

@@ -137,3 +137,18 @@ test('abandoned guest admissions release their seats without inheriting an ident
   assert.ok(!guests.some(g=>g.id===newcomer.id));
   await assert.rejects(()=>a.authenticate(guests[0].code,guests[0].token,guests[0].generation),{status:403});
 });
+
+test('room-scoped identities and full recovery cannot steal another connected seat',async()=>{
+  const {a,b}=setup();const host=await a.admit({create:true,code:'ROCK'}),other=await b.admit({create:true,code:'MOON'});
+  const departed=await a.admit({code:host.code});await a.leave(host.code,departed.id,departed.generation);
+  await assert.rejects(()=>b.admit({code:other.code,identityToken:departed.token}),{status:403});
+  await Promise.all(Array.from({length:3},()=>a.admit({code:host.code})));
+  await assert.rejects(()=>b.admit({code:host.code,identityToken:departed.token}),{status:409});
+  assert.equal((await a.current(host.code)).value.identities.filter(p=>p.connected).length,4);
+});
+test('retained guest identity ledger has an explicit bound and error',async()=>{
+  const {a}=setup();await a.admit({create:true,code:'ROCK'});
+  for(let i=0;i<127;i++){const g=await a.admit({code:'ROCK'});await a.leave(g.code,g.id,g.generation);}
+  await assert.rejects(()=>a.admit({code:'ROCK'}),{status:429});
+  assert.equal((await a.current('ROCK')).value.identities.length,128);
+});

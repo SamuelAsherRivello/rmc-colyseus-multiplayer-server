@@ -206,7 +206,11 @@ export function attachAsteroidsSocket(
           );
           if (Date.now() - lastHeartbeat >= 1000) {
             lastHeartbeat = Date.now();
-            await continuity.store.set(roomKey(registry, "frame"), {at:lastHeartbeat}, 30);
+            await continuity.store.set(
+              roomKey(registry, "frame"),
+              { at: lastHeartbeat },
+              30,
+            );
           }
           if (value.runId !== run) lastInput.clear();
           lastFrame = stamp;
@@ -249,4 +253,3 @@ export function attachAsteroidsSocket(
     stopped = true;
   });
 }
-
