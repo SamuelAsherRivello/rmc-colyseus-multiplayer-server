@@ -154,3 +154,15 @@ Combat differs from the generic code-rejoin guidance above: only SDK recovery pr
 ## Asteroids Multiplayer Clone (next release)
 
 Import the additive Asteroids rules and connection APIs. See the [Asteroids authority, recovery, tuning and hosting contract](../../documentation/asteroids.md). Public player IDs are distinct from private recovery tokens; guest hot drop frees a seat while the host retains personal lives. Host loss is terminal. This extension is unreleased pending sustained-hosting verification.
+
+## Space Invaders (next verified release)
+
+Create `new MultiplayerClient(endpoint, "space-invaders", {create:true})`, or join with `{code:"AB12", reconnectToken}`. Use `subscribe(listener)`, `connect()`, `send(type,value)` and `disconnect()` from the main export. Install the exact release tarball, rather than the source checkout: `npm install https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/releases/download/v<VERSION>/rmc-multiplayer-client-<VERSION>.tgz`, replacing VERSION with the verified published version.
+
+`state.seat` is a stable public gameplay identity; `state.sessionId` is the current socket. Keep the private `state.reconnectToken` separately per room, never in invitation URLs. Returns retain their life record. Departures free occupancy; drops reserve it for fifteen seconds. Four occupied seats include spectators. Room-code lookup retries three transient 404 responses over a bounded 1.05-second backoff before reporting an expired room; it never creates a replacement room.
+
+Subscribe to `gameAction`, `hostTransfer`, `presence`, `snapshot`, `gameState`, `recoveryError` and `status`. Authority state includes `hostId`, `epoch`, `runId`, `ready`, `transfer` and `journal`. Send sequenced `action` messages containing `{epoch,runId,sequence,type,payload}`. Inputs use `{move:-1|0|1,fire:boolean}`; only the host may send `start`. The relay stamps the sender and contiguous global action sequence. Heartbeats run once per second.
+
+A successor restores `transfer.state.state`, replays the unacknowledged `journal`, and sends `hostReady` with `{epoch}`. Only that ready host may publish `hostSnapshot` with `{protocolVersion:1,epoch,runId,tick,lastAppliedRelaySeq,random,state}`. Checkpoints are bounded to 12 KiB and the journal to 256 actions. A stalled journal emits `recoveryError` and pauses authority. The relay does not simulate game rules. See the [complete protocol](../../documentation/space-invaders.md).
+
+Rooms are process-local on the free Vercel Hobby deployment. Participant-host migration preserves committed state; it does not recover a lost backend instance. Missing checkpoints and expired rooms require visible recovery, without silent offline simulation or life resets.

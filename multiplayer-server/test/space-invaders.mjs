@@ -68,6 +68,8 @@ test('Space Invaders private relay: recovery, capacity, isolation, journal and a
     assert.equal(c.state.status, 'connected'); assert.equal(d.state.status, 'connected');
     assert.equal((await join({ code: a.state.code })).state.status, 'full');
     const other = await join({ create: true }); assert.notEqual(other.state.roomId, a.state.roomId);
+    const simultaneous = await Promise.all(Array.from({length:3},()=>join({code:other.state.code})));
+    assert.ok(simultaneous.every(peer=>peer.state.status==='connected'&&peer.state.roomId===other.state.roomId),'concurrent admissions share the requested private room');
     const bad = await join({ code: a.state.code, reconnectToken: 'invalid' }); assert.equal(bad.state.status, 'error');
     const oldEpoch = a.state.epoch;
     a.disconnect();
