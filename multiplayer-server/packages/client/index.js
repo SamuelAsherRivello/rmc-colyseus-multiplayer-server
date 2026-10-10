@@ -55,7 +55,7 @@ export class MultiplayerClient {
         const error = new Error(reservation.error || "Server unavailable");
         error.codeInUse = reservation.errorCode === "code_in_use";
         error.full = response.status === 409 && !error.codeInUse;
-        error.expired = response.status === 404 || response.status === 400;
+        error.expired = response.status === 404 || response.status === 400 || response.status === 403;
         throw error;
       }
       if (payload.code) {
@@ -79,23 +79,31 @@ export class MultiplayerClient {
       }
       if (this.stopped || generation !== this.generation) { await room.leave(); return; }
       this.room = room;
+      if (this.game === "space-invaders") {
+        const onMessage = room.onMessage.bind(room);
+        room.onMessage = (type, callback) => onMessage(type, data => {
+          if (!this.stopped && generation === this.generation && this.room === room) callback(data);
+        });
+      }
       this.state.sessionId = room.sessionId;
       this.state.roomId = room.roomId;
       room.onMessage("identity", data => { this.state.seat = data?.seat ?? null; this.emit("identity"); });
       room.onMessage("snapshot", data => {
+        if (this.game === "space-invaders") this.state.seat = data.seat ?? this.state.seat;
         this.state.players = data.players;
         this.state.strokes = new Map((data.strokes || []).map(s => [s.id, s]));
         this.state.capacity = data.capacity; this.state.gameState = data.gameState ?? null;
         this.state.chats = data.chats || [];
         this.state.hostId = data.hostId ?? data.gameState?.hostId ?? null;
         this.state.transfer = data.gameState?.transfer ?? null;
+        if (this.game === "space-invaders") Object.assign(this.state, { epoch: data.gameState?.epoch, ready: data.gameState?.ready, runId: data.gameState?.runId, journal: data.gameState?.journal ?? [] });
         this.state.capacity = data.capacity;
         this.state.status = "connected";
         this.state.error = "";
         this.retryDelay = 1000;
         this.emit("snapshot");
       });
-      room.onMessage("gameState", data => { this.state.gameState = data; if (data?.hostId !== undefined) { this.state.hostId = data.hostId; this.state.transfer = data.transfer ?? null; } this.emit("gameState"); });
+      room.onMessage("gameState", data => { this.state.gameState = data; if (data?.hostId !== undefined) { this.state.hostId = data.hostId; this.state.transfer = data.transfer ?? null; } if (this.game === "space-invaders") Object.assign(this.state, { epoch: data.epoch, ready: data.ready, runId: data.runId }); this.emit("gameState"); });
       room.onMessage("presence", data => { Object.assign(this.state, data); this.emit("presence"); });
       room.onMessage("garden", data => { this.state.players = data.players; this.emit("garden"); });
       room.onMessage("chat", data => { this.state.chats = [...(this.state.chats || []), data].slice(-100); this.emit("chat"); });
@@ -119,15 +127,17 @@ export class MultiplayerClient {
       });
       room.onMessage("notice", text => { this.state.error = text; this.emit("notice"); });
       room.onMessage("habitatAction", data => { this.state.lastAction = data; this.emit("habitatAction"); });
-      room.onMessage("hostTransfer", data => { this.state.hostId = data?.hostId ?? null; this.state.transfer = data?.transfer ?? null; this.emit("hostTransfer"); });
+      room.onMessage("gameAction", data => { this.state.lastAction = data; this.emit("gameAction"); });
+      room.onMessage("recoveryError", data => { this.state.error = data.message; this.state.ready = false; this.emit("recoveryError"); });
+      room.onMessage("hostTransfer", data => { if (this.game === "space-invaders") Object.assign(this.state, data); this.state.hostId = data?.hostId ?? null; this.state.transfer = data?.transfer ?? null; this.emit("hostTransfer"); });
       room.onError((_code, message) => { this.state.error = message || "Connection error"; this.emit("error"); });
       room.onLeave(() => {
         if (generation !== this.generation || this.stopped) return;
         this.room = undefined;
-        this.schedule("Connection lost. Rejoining as a new player…");
+        this.schedule("Connection lost. Recovering your session…");
       });
       room.send("snapshot");
-      const heartbeat = this.game === "just-like-rabbits" ? setInterval(() => room.send("heartbeat"), 5000) : null;
+      const heartbeat = ["space-invaders", "just-like-rabbits"].includes(this.game) ? setInterval(() => { if (!this.stopped && generation === this.generation) room.send("heartbeat"); }, this.game === "space-invaders" ? 1000 : 5000) : null;
       const snapshotDeadline = setTimeout(() => {
         if (generation === this.generation && this.state.status !== "connected" && !this.stopped) {
           void room.leave();

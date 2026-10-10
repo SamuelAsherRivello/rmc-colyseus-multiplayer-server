@@ -67,6 +67,11 @@ jobs:
         env:
           SERVER_URL: ${{ steps.deploy.outputs.url }}
           LONG_SESSION_SECONDS: '240'
+      - name: Verify the four-minute Space Invaders session and host migration
+        run: node scripts/space-invaders-session.mjs
+        env:
+          SERVER_URL: ${{ steps.deploy.outputs.url }}
+          LONG_SESSION_SECONDS: '240'
       - name: Promote the verified deployment to the stable production URL
         id: promote
         env:
@@ -83,6 +88,7 @@ jobs:
       - name: Restore the previous production deployment if public verification fails
         if: ${{ failure() && steps.promote.outcome == 'success' }}
         run: vercel rollback --token="$VERCEL_TOKEN"
+
 
 
 
