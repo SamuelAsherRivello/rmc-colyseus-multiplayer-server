@@ -39,7 +39,7 @@ test('Combat real private admission, authoritative motion/fire, populations, rec
   const other=await join({create:true,code});assert.equal(other.state.status,'error','duplicate code rejected');
   const independent=await join({create:true});assert.notEqual(independent.state.roomId,b.state.roomId);
   const peers=await Promise.all(Array.from({length:3},()=>join({code:independent.state.code})));
-  assert.ok(peers.every(p=>p.state.status==='connected'&&p.state.roomId===independent.state.roomId),'simultaneous reservations share one room');
+  assert.ok(peers.every(p=>p.state.status==='connected'&&p.state.roomId===independent.state.roomId),'simultaneous reservations share one room: '+JSON.stringify(peers.map(p=>({status:p.state.status,room:p.state.roomId,error:p.state.error,expected:independent.state.roomId}))));
   await until(()=>independent.state.gameState.people.length===4,'four simultaneous humans');
   assert.equal(independent.state.gameState.tanks.filter(t=>t.cpu).length,0);
   const expiredCode=independent.state.code;for(const peer of [independent,...peers])peer.disconnect();

@@ -51,7 +51,17 @@ export class MultiplayerClient {
     this.emit("status");
     let room;
     try {
-      const response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(this.options), signal: AbortSignal.timeout(15000) });
+      let response;
+      for (let attempt = 0; ; attempt++) {
+        response = await fetch(this.endpoint + "/api/join/" + encodeURIComponent(this.game), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(this.options), signal: AbortSignal.timeout(15000) });
+        // Vercel can route concurrent HTTP admissions to a cold instance which
+        // cannot see this process-local room. Retry the same private invitation
+        // briefly; never create an overflow room or reset the participant.
+        if (response.status !== 404 || !["combat", "space-invaders"].includes(this.game) || this.options.create === true || attempt >= 3) break;
+        await response.text();
+        await new Promise(resolve => setTimeout(resolve, 150 * 2 ** attempt));
+        if (this.stopped || generation !== this.generation) return;
+      }
       const payload = await response.json();
       const reservation = payload.reservation || payload;
       if (!response.ok) {
@@ -69,7 +79,17 @@ export class MultiplayerClient {
           if(this.game === "tetris-duel")try{globalThis.sessionStorage?.setItem(`rmc:${this.endpoint}:${this.game}:${payload.code}`,payload.token);}catch{}
         }
       }
-      room = await new Client(this.endpoint).consumeSeatReservation(reservation);
+      for (let attempt = 0; ; attempt++) {
+        try { room = await new Client(this.endpoint).consumeSeatReservation(reservation); break; }
+        catch (error) {
+          // Reuse the issued reservation if a socket upgrade lands on another
+          // instance. A fresh HTTP reservation would temporarily consume an
+          // extra seat and make concurrent joins report a false full room.
+          if (!["combat", "space-invaders"].includes(this.game) || attempt >= 3) throw error;
+          await new Promise(resolve => setTimeout(resolve, 150 * 2 ** attempt));
+          if (this.stopped || generation !== this.generation) return;
+        }
+      }
       const recoversSeat = this.game === 'combat' || this.game === 'bomberman' || this.game === 'ring-rivals' || this.game === 'tetris-duel';
       room.reconnection.enabled = recoversSeat;
       if (recoversSeat) {
