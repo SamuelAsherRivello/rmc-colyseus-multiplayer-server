@@ -16,6 +16,7 @@
 | Ring Rivals | ring-rivals | 2 | 0.9.3+ | [In development](https://samuelasherrivello.github.io/babylon-lite-ring-rivals/) | [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L39) · [Lifecycle](../src/private-code-room.ts#L14) |
 | Street Fighter II Clone | street-fighter-ii | 2 | 0.9.4+ | [In development](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/) | [Guide](../packages/client/README.md#coded-private-room-workflow) · [Admission](../src/server.ts#L72) · [Lifecycle](../src/private-code-room.ts#L14) |
 | Sumo Battle | sumo-battle | 12 | 0.2.0+ | [Live demo](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) | — |
+| Tetris Multiplayer Clone | tetris-duel | 2 | next release | In development | Four-character private rooms; authenticated 15-second cumulative recovery; [Rules/API](tetris-duel.md) |
 
 All packages are @rmc/multiplayer-client. Before changing a shared protocol, review each game, update affected consumers and test public URLs. Short downtime and session loss are acceptable; leaving existing demos broken is not.
 
@@ -39,3 +40,7 @@ bomberman — 2–4 players, private codes, authoritative bomb arena, 15-second 
 ## Music Maker Multiplayer
 
 `music-maker` uses private four-seat codes and a host-browser event ledger. The server assigns fictional names, numbers and colors, stamps input origins, bounds messages and accepts publications only from the creator. It does not simulate musical time. Host disconnect ends the room without migration or grace. Guest reconnect creates a fresh identity while the host remains active. Existing game contracts are unchanged.
+
+## Tetris Multiplayer Clone
+
+The existing free Vercel relay owns private timed placement, garbage, outcomes and bounded same-seat recovery. Only own-board state and permitted opponent hints leave the authority. See [Tetris rules and protocol](tetris-duel.md). Process replacement can expire a room; no cross-instance durability is claimed.

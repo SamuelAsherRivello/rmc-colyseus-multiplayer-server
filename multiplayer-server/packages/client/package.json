@@ -10,7 +10,8 @@
     "./street-fighter": "./street-fighter-simulation.js",
     "./bomberman": "./bomberman-rules.js",
     "./bomberman-cpu": "./bomberman-cpu.js",
-    "./combat": "./combat-rules.js"
+    "./combat": "./combat-rules.js",
+    "./tetris-duel": "./tetris-duel-rules.js"
   },
   "files": [
     "index.js",
@@ -22,7 +23,8 @@
     "street-fighter-fighters.js",
     "bomberman-rules.js",
     "bomberman-cpu.js",
-    "combat-rules.js"
+    "combat-rules.js",
+    "tetris-duel-rules.js"
   ],
   "dependencies": {
     "@colyseus/sdk": "0.17.43"

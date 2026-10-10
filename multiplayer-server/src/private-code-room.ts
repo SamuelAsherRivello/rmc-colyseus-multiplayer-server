@@ -38,8 +38,8 @@ export abstract class PrivateCodeRoom extends Room {
     return false;
   }
 
-  protected async waitForCodeRecovery(client: Client, onExpired: () => void): Promise<void> {
-    const deferred = this.allowReconnection(client, 15);
+  protected async waitForCodeRecovery(client: Client, onExpired: () => void, seconds = 15): Promise<void> {
+    const deferred = this.allowReconnection(client, seconds);
     let finish!: () => void;
     let resolveLeft!: () => void;
     const finished = new Promise<void>(resolve => { finish = resolve; });
@@ -65,10 +65,10 @@ export abstract class PrivateCodeRoom extends Room {
     }
   }
 
-  async prepareRoomCodeRejoin(): Promise<string | undefined> {
-    const pendingEntry = [...this.pendingRecoveries].find(([sessionId]) => !this.codeReplacements.has(sessionId));
-    const offlineEntry = [...this.offlineSeats].find(([sessionId]) => !this.codeReplacements.has(sessionId));
-    const expiredSessionId = [...this.expiredRecoveries].find(sessionId => !this.codeReplacements.has(sessionId));
+  async prepareRoomCodeRejoin(targetSessionId?: string): Promise<string | undefined> {
+    const pendingEntry = [...this.pendingRecoveries].find(([sessionId]) => !this.codeReplacements.has(sessionId) && (!targetSessionId || targetSessionId === sessionId));
+    const offlineEntry = [...this.offlineSeats].find(([sessionId]) => !this.codeReplacements.has(sessionId) && (!targetSessionId || targetSessionId === sessionId));
+    const expiredSessionId = [...this.expiredRecoveries].find(sessionId => !this.codeReplacements.has(sessionId) && (!targetSessionId || targetSessionId === sessionId));
     const next = pendingEntry ?? offlineEntry ?? (expiredSessionId ? [expiredSessionId, undefined] as const : undefined);
     if (!next) return undefined;
     const [sessionId, pending] = next;

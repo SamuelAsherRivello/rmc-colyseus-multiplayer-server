@@ -30,6 +30,9 @@ export class MultiplayerClient {
     this.options = { ...options };
     const linkedCode = readRoomCode();
     if (linkedCode && !options.code && options.create !== true) this.options = { ...this.options, code: linkedCode, create: false };
+    if (game === "tetris-duel" && this.options.code && !this.options.create && !this.options.reconnectToken) {
+      try { const token=globalThis.sessionStorage?.getItem(`rmc:${this.endpoint}:${game}:${this.options.code}`); if(token)this.options.reconnectToken=token; } catch {}
+    }
     this.listeners = new Set();
     this.state = { status: "idle", players: [], strokes: new Map(), gameState: null, chats: [], capacity: 12, sessionId: null, seat: null, hostId: null, transfer: null, lastAction: null, error: "" };
     this.stopped = true;
@@ -55,16 +58,19 @@ export class MultiplayerClient {
         const error = new Error(reservation.error || "Server unavailable");
         error.codeInUse = reservation.errorCode === "code_in_use";
         error.full = response.status === 409 && !error.codeInUse;
-        error.expired = response.status === 404 || response.status === 400;
+        error.expired = response.status === 404 || response.status === 400 || (this.game === "tetris-duel" && response.status === 403);
         throw error;
       }
       if (payload.code) {
         this.options = { code: payload.code, ...(payload.token ? { reconnectToken: payload.token } : this.options.reconnectToken ? { reconnectToken: this.options.reconnectToken } : {}) };
         this.state.code = payload.code;
-        if (payload.token) this.state.reconnectToken = payload.token;
+        if (payload.token) {
+          this.state.reconnectToken = payload.token;
+          if(this.game === "tetris-duel")try{globalThis.sessionStorage?.setItem(`rmc:${this.endpoint}:${this.game}:${payload.code}`,payload.token);}catch{}
+        }
       }
       room = await new Client(this.endpoint).consumeSeatReservation(reservation);
-      const recoversSeat = this.game === 'combat' || this.game === 'bomberman' || this.game === 'ring-rivals';
+      const recoversSeat = this.game === 'combat' || this.game === 'bomberman' || this.game === 'ring-rivals' || this.game === 'tetris-duel';
       room.reconnection.enabled = recoversSeat;
       if (recoversSeat) {
         room.reconnection.maxRetries = 18; room.reconnection.minDelay = 200; room.reconnection.maxDelay = 1000; room.reconnection.minUptime = 0;
@@ -128,7 +134,9 @@ export class MultiplayerClient {
       room.onLeave(() => {
         if (generation !== this.generation || this.stopped) return;
         this.room = undefined;
-        if (this.game === "combat") { this.state.status = "error"; this.state.error = "Room recovery ended. Retry the code or create a new room; scores may be lost."; this.emit("status"); } else this.schedule("Connection lost. Rejoining as a new player…");
+        if (this.game === "combat") { this.state.status = "error"; this.state.error = "Room recovery ended. Retry the code or create a new room; scores may be lost."; this.emit("status"); } else if(this.game === "tetris-duel") {
+          this.state.status="error";this.state.error="Room expired or recovery ended. Create a new room to play again.";this.emit("status");
+        } else this.schedule("Connection lost. Rejoining as a new player…");
       });
       room.send("snapshot");
       const heartbeat = (this.game === "just-like-rabbits" || this.game === "music-maker") ? setInterval(() => room.send("heartbeat"), 5000) : null;

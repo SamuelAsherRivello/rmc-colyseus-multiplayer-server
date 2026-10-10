@@ -62,6 +62,10 @@ jobs:
         run: npm test
         env:
           SERVER_URL: ${{ steps.deploy.outputs.url }}
+      - name: Verify private Tetris relay gameplay and recovery
+        run: node --import tsx --test multiplayer-server/test/tetris-duel-integration.mjs
+        env:
+          SERVER_URL: ${{ steps.deploy.outputs.url }}
       - name: Verify a Vercel Hobby-compatible four-minute relay session
         run: npm run verify:long-session
         env:

@@ -18,6 +18,7 @@ import { StreetFighterRoom } from "./street-fighter-room.js";
 import { NeonBreakerRoom } from "./neon-breaker-room.js";
 import { RingRivalsRoom } from "./ring-rivals-room.js";
 import { PrivateCodeRoom } from "./private-code-room.js";
+import { TetrisDuelRoom } from "./tetris-duel-room.js";
 import { JustLikeRabbitsRoom } from "./just-like-rabbits-room.js";
 
 import { MusicRoom } from './music-room.js';
@@ -28,13 +29,13 @@ matchMaker.controller.invokeMethod = async (method, room, options, auth) => {
   if (room !== "feasibility") throw new ServerError(403, "Use the game's join endpoint");
   return defaultMatchmaking(method, room, options, auth);
 };
-type GameRoom = typeof CombatRoom | typeof MusicRoom | typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom | typeof RingRivalsRoom | typeof StreetFighterRoom | typeof JustLikeRabbitsRoom;
+type GameRoom = typeof CombatRoom | typeof MusicRoom | typeof BombermanRoom | typeof GungeonRoom | typeof DrawingRoom | typeof SumoRoom | typeof GardenRoom | typeof Gauntlet2DRoom | typeof GauntletRoom | typeof RacingRoom | typeof NeonBreakerRoom | typeof RingRivalsRoom | typeof StreetFighterRoom | typeof JustLikeRabbitsRoom | typeof TetrisDuelRoom;
 const games = new Map<string, GameRoom>([
   ["music-maker", MusicRoom], ["combat", CombatRoom], ["bomberman", BombermanRoom], ["gungeon", GungeonRoom], ["multiplayer-draw", DrawingRoom],
   ["sumo-battle", SumoRoom], ["garden-chat", GardenRoom], ["gauntlet-2d", Gauntlet2DRoom],
   ["gauntlet-3d", GauntletRoom], ["dust-circuit-rally", RacingRoom],
   ["neon-breaker-duo", NeonBreakerRoom], ["ring-rivals", RingRivalsRoom],
-  ["street-fighter-ii", StreetFighterRoom], ["just-like-rabbits", JustLikeRabbitsRoom],
+  ["tetris-duel", TetrisDuelRoom], ["street-fighter-ii", StreetFighterRoom], ["just-like-rabbits", JustLikeRabbitsRoom],
 ]);
 let joining: Promise<unknown> = Promise.resolve();
 const streetFighterInvites = new Map<string, { roomId: string; tokens: Set<string> }>();
@@ -137,6 +138,40 @@ async function reserveStreetFighter(body: unknown) {
   });
   joining = pending; return pending;
 }
+async function reserveTetris(body: unknown) {
+  const data = body as {create?:boolean;code?:string;reconnectToken?:string};
+  if (!data || typeof data !== "object") throw new AdmissionError(400,"Choose create or enter a room code");
+  const pending=joining.catch(()=>undefined).then(async()=>{
+    const rooms=await matchMaker.query({name:"tetris-duel"});
+    if(data.create===true){
+      if(rooms.length>=50)throw new AdmissionError(503,"Too many active duels");
+      const requested=data.code===undefined?undefined:normalizePrivateRoomCode(data.code);
+      if(data.code!==undefined&&!requested)throw new AdmissionError(400,"Enter a four-character room code");
+      const taken=(code:string)=>rooms.some(room=>room.metadata?.code===code);
+      if(requested&&taken(requested))throw new AdmissionError(409,"That room code is already in use","code_in_use");
+      const code=requested??generatePrivateRoomCode(taken),token=randomUUID();
+      const room=await matchMaker.createRoom("tetris-duel",{code});
+      return {reservation:await matchMaker.joinById(room.roomId,{reconnectToken:token}),code,token};
+    }
+    const code=normalizePrivateRoomCode(data.code);
+    if(!code)throw new AdmissionError(400,"Enter a four-character room code");
+    const entry=rooms.find(room=>room.metadata?.code===code);
+    if(!entry)throw new AdmissionError(404,"Room expired or code not found. Create a new room.");
+    const room=matchMaker.getLocalRoomById(entry.roomId);
+    if(!(room instanceof TetrisDuelRoom))throw new AdmissionError(404,"Room expired on this relay instance");
+    let replaced:string|undefined;
+    if(data.reconnectToken){
+      if(typeof data.reconnectToken!=="string"||!room.tokenSeat(data.reconnectToken))throw new AdmissionError(403,"Recovery token invalid or expired","expired");
+      replaced=await room.prepareTokenRecovery(data.reconnectToken);
+      if(!replaced)throw new FullRoomError();
+      await room.unlock();
+    }else if(!room.canAdmit()||room.locked||entry.clients>=2)throw new FullRoomError();
+    const token=randomUUID();
+    try{return {reservation:await matchMaker.joinById(entry.roomId,{reconnectToken:token,...(replaced?{roomCodeRejoinSessionId:replaced}:{})}),code,token};}
+    catch(error){if(replaced)await room.cancelRoomCodeRejoin(replaced);throw error;}
+  });
+  joining=pending;return pending;
+}
 async function reserve(game: string) {
   // Serialize local creation/reservation so simultaneous arrivals do not create overflow rooms.
   const pending = joining.catch(() => undefined).then(async () => {
@@ -175,14 +210,14 @@ const gameServer = new Server({
       if (!games.has(req.params.game)) { res.status(404).json({ error: "Unknown game" }); return; }
       try {
         const game = req.params.game;
-        if (["combat", "music-maker", "gungeon", "bomberman", "ring-rivals", "street-fighter-ii"].includes(game) && (req.body as { create?: boolean })?.create !== true) {
+        if (["combat", "music-maker", "gungeon", "bomberman", "ring-rivals", "street-fighter-ii", "tetris-duel"].includes(game) && (req.body as { create?: boolean })?.create !== true) {
           if (!privateRoomCodeAttempts.take(req.ip || req.socket.remoteAddress || "unknown")) {
             res.setHeader("Retry-After", "60");
             res.status(429).json({ error: "Too many room-code attempts. Try again shortly.", errorCode: "rate_limited" });
             return;
           }
         }
-        const reservation = game === "street-fighter-ii"
+        const reservation = game === "tetris-duel" ? await reserveTetris(req.body) : game === "street-fighter-ii"
           ? await reserveStreetFighter(req.body)
           : ["combat", "music-maker", "gungeon", "bomberman", "ring-rivals"].includes(game)
             ? await reserveDungeon(req.body, game)

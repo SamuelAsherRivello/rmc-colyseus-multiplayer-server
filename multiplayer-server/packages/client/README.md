@@ -6,6 +6,10 @@ Multiplayer games with private rooms should use the same entry flow: show **Play
 
 The server generates and validates codes in [`private-room-codes.ts`](../../src/private-room-codes.ts), admits them through [`server.ts`](../../src/server.ts), and applies recovery in [`private-code-room.ts`](../../src/private-code-room.ts). A room and its code remain available while a player is connected or recovering; after the last player leaves, an empty room remains available for 15 seconds so a refresh can rejoin it with a fresh identity. A server process restart ends rooms. See the matching root README [Custom Shared Features row](../../../README.md#custom-shared-features).
 
+## Tetris Multiplayer Clone (next release)
+
+Use `tetris-duel` for private two-seat play and import browser-safe rules from `@rmc/multiplayer-client/tetris-duel`. This game requires authenticated recovery rather than the generic room-code replacement above. See the [Tetris rules, private projection, input protocol and free Vercel limits](../../documentation/tetris-duel.md).
+
 ## Street Fighter II Clone (0.9.4 target)
 
 Create `new MultiplayerClient(endpoint, "street-fighter-ii", { create: true, code: suggestedCode })` to host a private duel, or pass `{ code: "AB12" }` to join. The creator receives the normalized four-character `state.code`; share that code or the page URL with `?room=AB12`. Capacity is exactly two. The server returns each seat a private reconnect token and the shared client retries it automatically for 15 seconds. A successful reconnect keeps the same fighter seat and match state. Tokens and rooms live in memory; a process restart ends the invite.
@@ -62,6 +66,7 @@ This package is part of **RMC Colyseus Multiplayer Server**, which has no standa
 - [**Ring Rivals**](https://samuelasherrivello.github.io/babylon-lite-ring-rivals/) — fight private online 1v1 boxing bouts from mirrored opponent-focused views. (In development.)
 - [**Street Fighter II Clone**](https://samuelasherrivello.github.io/babylon-lite-street-fighter-clone/) — private server-authoritative arcade duels with bounded same-seat recovery. (In development.)
 - [**Sumo Battle**](https://samuelasherrivello.github.io/babylon-lite-sumo-battle/) — push opponents out of the ring in an online sumo arena.
+- **Tetris Multiplayer Clone** — hidden-board timed aim-and-release duel with private opponent hints and garbage attacks. (In development.)
 
 See the [server README](../../../README.md) for setup and the [game registry](../../documentation/games.md) for supported consumers.
 
