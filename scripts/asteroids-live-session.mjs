@@ -1,3 +1,5 @@
+import { WebSocket as ProbeWebSocket } from "ws";
+globalThis.WebSocket = ProbeWebSocket;
 import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 import { connectSharedAsteroids } from "../multiplayer-server/packages/client/asteroids-shared-connection.js";
@@ -43,11 +45,13 @@ export async function verifyAsteroidsSession(endpoint, seconds = 8) {
     }
     throw new Error(label);
   }
+  console.log("Asteroids live probe: create host");
   const hostData = await admission({ create: true });
   assert.equal(hostData.transport, "asteroids-shared-v1");
   await admission({ create: true, code: hostData.code }, 409);
   await admission({ code: "BAD" }, 400);
   await admission({ code: hostData.code, identityToken: hostData.id }, 403);
+  console.log("Asteroids live probe: connect host");
   const host = await connectSharedAsteroids(base, hostData, {
     onPresence: (p) => {
       if (p.serial === serial) return;
@@ -97,6 +101,7 @@ export async function verifyAsteroidsSession(endpoint, seconds = 8) {
       },
     };
   }
+  console.log("Asteroids live probe: connect guest");
   let guest = await connectSharedAsteroids(base, guestData, callbacks());
   connections.push(guest);
   try {
@@ -141,6 +146,7 @@ export async function verifyAsteroidsSession(endpoint, seconds = 8) {
     const extras = [];
     for (let i = 0; i < 2; i++) {
       const data = await admission({ code: hostData.code });
+      console.log("Asteroids live probe: connect extra participant", i+3);
       const extra = await connectSharedAsteroids(base, data, {
         onEnded: () => {},
       });
@@ -210,3 +216,5 @@ if (process.argv[1]?.endsWith("asteroids-live-session.mjs"))
     process.env.SERVER_URL,
     Number(process.env.LONG_SESSION_SECONDS || 600),
   );
+
+

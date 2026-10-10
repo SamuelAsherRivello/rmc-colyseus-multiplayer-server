@@ -147,7 +147,19 @@ test("separate socket servers share damaged state, input, recovery and planned h
   assert.equal(store.records.get("ROCK").value.ended, false);
   assert.equal(world.wave, 1);
   assert.equal(world.asteroids[0].hp, 2);
+  const extras=[];
+  for(let i=0;i<2;i++) {
+    const data=await b.admit({code:host.code});
+    const connection=await connect(servers[i].address().port,data);
+    extras.push({data,connection});setConnected(world,data.id,true,i+3);serial++;
+    await waitFor(()=>connection.messages.some(m=>m.type==='gameState' && m.value.players.length===i+3));
+  }
+  await assert.rejects(()=>a.admit({code:host.code}),{status:409});
+  for(const {data,connection} of extras) {connection.socket.close();setConnected(world,data.id,false);}
+  await waitFor(()=>store.records.get('ROCK').value.identities.filter(p=>p.connected).length===2);
+  serial=store.records.get('ROCK').value.serial;
   h.socket.close();
   await waitFor(() => g2.messages.some((m) => m.type === "sessionEnded"));
   await assert.rejects(() => a.admit({ code: host.code }), { status: 404 });
 });
+

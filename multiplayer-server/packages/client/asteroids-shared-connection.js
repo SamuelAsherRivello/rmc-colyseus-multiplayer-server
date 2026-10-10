@@ -50,9 +50,9 @@ export async function connectSharedAsteroids(base, admission, callbacks) {
         clearTimeout(timer);
         reject(new Error("Could not connect to the shared relay"));
       };
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         clearTimeout(timer);
-        reject(new Error("Relay closed before authentication"));
+        reject(new Error(`Relay closed before authentication (${event.code}: ${event.reason || "no reason"})`));
         if (ws === socket && !renewing && !intentional)
           ended(
             "Connection lost. Guests can rejoin with the code; host loss ends the session.",
@@ -121,3 +121,4 @@ export async function connectSharedAsteroids(base, admission, callbacks) {
     renew,
   };
 }
+

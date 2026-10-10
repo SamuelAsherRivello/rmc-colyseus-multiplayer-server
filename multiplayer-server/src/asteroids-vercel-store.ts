@@ -11,6 +11,8 @@ export class VercelAsteroidsStore implements ContinuityStore {
     const result = await get(this.path(code), {
       access: "private",
       useCache: false,
+      // Compressed responses have weak ETags, which cannot satisfy Blob If-Match.
+      headers: { 'accept-encoding': 'identity' },
     });
     if (!result) return null;
     if (result.statusCode !== 200)
