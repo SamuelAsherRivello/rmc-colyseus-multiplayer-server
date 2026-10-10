@@ -46,3 +46,9 @@ Blob writes occur on creation, admission, departure and renewal, never on simula
 References: https://vercel.com/docs/vercel-blob/using-blob-sdk; https://vercel.com/changelog/vercel-blob-now-supports-consistent-reads-on-private-storage; https://vercel.com/docs/vercel-blob/usage-and-pricing; https://vercel.com/docs/functions/websockets.
 
 
+
+## Verified free-host continuity
+
+On 2026-10-10, public preview workflow run [38084287501](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/38084287501) passed four-seat admission, fifth-seat rejection, hot drops, and a 600-second two-client session with 11,824 synchronized frames and four planned connection renewals. Wave 3, damaged asteroid health 2, and the eliminated guest's zero lives survived all connection windows. Guest recovery preserved identity; actual creator loss terminated the invitation. Four independent Microsoft Edge contexts separately passed synchronization, recovery, renewal and terminal-host-loss checks. These are backend protocol checks, not a claim that the game client has shipped.
+
+Large private Blob records can return compressed responses with weak ETags. Registry reads explicitly request identity encoding so conditional writes use the strong object ETag. Cross-instance probe [38083589232](https://github.com/SamuelAsherRivello/rmc-colyseus-multiplayer-server/actions/runs/38083589232) verified exclusive creation, strong-ETag conditional writes, consistent reads and independent Function instances. The full prescribed Node 24 regression suite passed 141/141 tests after the fix. All hosting remains on Vercel Hobby with first-party private Blob and Runtime Cache; no paid plan or third-party service was enabled.
